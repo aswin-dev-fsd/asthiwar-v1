@@ -10,6 +10,8 @@ import {
 import { validateRequest } from '../middleware/validate.js';
 import { calculateEstimateSchema } from '../modules/calculator/calculator.schema.js';
 
+import { downloadEstimatePdfController } from '../modules/pdf/pdf.controller.js';
+
 const router = Router();
 
 // GET /api/v1/calculator/locations — Active cities and price multipliers
@@ -29,5 +31,8 @@ router.post('/estimate', validateRequest({ body: calculateEstimateSchema }), cre
 
 // GET /api/v1/calculator/estimate/:estimateNumber — View historical estimate snapshot
 router.get('/estimate/:estimateNumber', getEstimateByNumber);
+
+// GET /api/v1/calculator/estimate/:estimateNumber/pdf — Download/View Branded Estimate Quotation PDF
+router.get('/estimate/:estimateNumber/pdf', downloadEstimatePdfController);
 
 export default router;

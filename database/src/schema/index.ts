@@ -5,3 +5,4 @@ export * from './specifications';
 export * from './addons';
 export * from './estimates';
 export * from './enquiries';
+export * from './notifications';

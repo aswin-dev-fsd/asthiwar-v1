@@ -500,3 +500,352 @@ Results: 27 Passed, 0 Failed
 * `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
 
 ---
+
+# Phase 7: Admin Management APIs & Analytics Engine (`/api/v1/admin/*`)
+
+**Date:** 2026-08-18 23:49 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/admin/admin.schema.ts` — Zod request validation schemas for enquiries filtering & mutation, estimates filtering & mutation, and pagination.
+* `backend/src/modules/admin/admin.service.ts` — Comprehensive admin service providing:
+  * **Enquiries Management:** Full-text search (name, phone, email, estimate #), status filtering, pagination, relational left joins with estimate calculations, and status/notes mutations.
+  * **Estimates Management:** Multi-filter query engine (package slug, location, status, search), deep relational lookup fetching customer inputs, milestone schedules, `estimate_items` (brand upgrades), and `estimate_addons` (15 variants), plus status/PDF URL attachments.
+  * **Analytics & Dashboard Engine:** SQL aggregations computing total estimates, total pipeline value (INR), average project ticket size, average built-up area, lead conversion rates, and multi-dimensional distributions (by package tier and geographical location).
+* `backend/src/modules/admin/admin.controller.ts` — Standardized REST API controllers for all admin operations.
+* `backend/src/routes/admin.routes.ts` — Protected Express router guarded by `requireAdminAuth` middleware.
+* `backend/src/routes/index.ts` — Mounted `/admin` in the central API router.
+* `backend/src/modules/admin/admin.test.ts` — Automated end-to-end integration test suite verifying authentication guards, lead management, estimate auditing, and analytics accuracy.
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth Requirement |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/enquiries` | Returns paginated list of leads with search, status filtering, and joined estimate summary. | Admin Auth |
+| `GET` | `/api/v1/admin/enquiries/:id` | Returns single lead detail with complete linked estimate record. | Admin Auth |
+| `PATCH` | `/api/v1/admin/enquiries/:id` | Updates lead status (`NEW` → `CONTACTED` → `CLOSED_WON` / `CLOSED_LOST`) & appends admin notes. | Admin Auth |
+| `GET` | `/api/v1/admin/estimates` | Returns paginated estimates list with search, package, location, and status filters. | Admin Auth |
+| `GET` | `/api/v1/admin/estimates/:idOrNumber` | Returns full estimate detail with 10 milestone stages, snapshot, items, and add-ons. | Admin Auth |
+| `PATCH` | `/api/v1/admin/estimates/:id` | Updates estimate workflow status (`DRAFT`, `GENERATED`, `SENT`) and attaches PDF link. | Admin Auth |
+| `GET` | `/api/v1/admin/analytics/dashboard` | Computes live KPIs, pipeline valuation, conversion rate, and package/city distribution metrics. | Admin Auth |
+
+### 3. Automated Admin Management Test Suite Results (`admin.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/admin/admin.test.ts`
+
+```
+👑 ASTHIWAR Admin Management & Analytics Test Suite — Phase 7
+-----------------------------------------------------------------
+
+[Test 1] Security Guard: Unauthorized Access Blocking (401)
+  ✅ PASS: GET /admin/enquiries without auth returns 401
+  ✅ PASS: Returns UNAUTHORIZED code
+  ✅ PASS: GET /admin/estimates without auth returns 401
+  ✅ PASS: GET /admin/analytics/dashboard without auth returns 401
+
+[Test 2] Admin Login & Session Acquisition
+  ✅ PASS: Admin login returns 200 OK
+  ✅ PASS: Admin login success is true
+  ✅ PASS: Bearer token successfully obtained
+  ✅ PASS: Session cookie successfully captured
+
+[Test 3] Seed Sample Estimate & Enquiry via Public API
+  ✅ PASS: Public estimate created with 201 Created
+  ✅ PASS: Created test estimate ID
+  ✅ PASS: Public enquiry created with 201 Created
+  ✅ PASS: Created test enquiry ID
+
+[Test 4] Admin Enquiries: List, Filter & Pagination
+  ✅ PASS: GET /admin/enquiries returns 200 OK
+  ✅ PASS: Returns data array
+  ✅ PASS: Total enquiries >= 1
+  ✅ PASS: Current page is 1
+  ✅ PASS: Search enquiries by name returns 200 OK
+  ✅ PASS: Found matching enquiry
+  ✅ PASS: Full name matches search query
+
+[Test 5] Admin Enquiries: Detail Lookup & Workflow Mutation
+  ✅ PASS: GET /admin/enquiries/:id returns 200 OK
+  ✅ PASS: Fetched enquiry ID matches
+  ✅ PASS: Includes linked estimate details
+  ✅ PASS: Linked estimate number matches
+  ✅ PASS: PATCH /admin/enquiries/:id returns 200 OK
+  ✅ PASS: Enquiry status transitioned to CONTACTED
+  ✅ PASS: Admin notes successfully updated
+
+[Test 6] Admin Estimates: List, Filter & Deep Relation Lookup
+  ✅ PASS: GET /admin/estimates returns 200 OK
+  ✅ PASS: Returns estimates array
+  ✅ PASS: Total estimates >= 1
+  ✅ PASS: GET /admin/estimates/:id returns 200 OK
+  ✅ PASS: Estimate number matches
+  ✅ PASS: Returns addons array
+  ✅ PASS: Includes saved addon items
+  ✅ PASS: GET /admin/estimates/:estimateNumber returns 200 OK
+  ✅ PASS: Estimate lookup by human number returns correct ID
+  ✅ PASS: PATCH /admin/estimates/:id returns 200 OK
+  ✅ PASS: Estimate status updated to GENERATED
+  ✅ PASS: PDF URL attached
+
+[Test 7] Admin Analytics Dashboard & Pipeline Valuation
+  ✅ PASS: GET /admin/analytics/dashboard returns 200 OK
+  ✅ PASS: Analytics response is successful
+  ✅ PASS: KPI: totalEstimates >= 1
+  ✅ PASS: KPI: totalPipelineValue > 0
+  ✅ PASS: KPI: totalEnquiries >= 1
+  ✅ PASS: Returns estimatesByPackage distribution
+  ✅ PASS: Returns estimatesByLocation distribution
+  ✅ PASS: Returns recentEstimates list
+  ✅ PASS: Returns recentEnquiries list
+
+-----------------------------------------------------------------
+Results: All Phase 7 Admin Management & Analytics Tests Passed!
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
+
+# Phase 8: Admin Calculator Configuration & Pricing Engine (`/api/v1/admin/config/*`)
+
+**Date:** 2026-08-18 23:52 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/admin/admin-config.schema.ts` — Zod request schemas enforcing strict validation on standard and volume rate inputs, location multipliers (0.5–2.0), add-on variant prices, and brand upgrade differentials.
+* `backend/src/modules/admin/admin-config.service.ts` — Core configuration and price versioning engine enforcing:
+  * **Rule 7 & 8 (Immutable Price History):** Modifying a package rate, add-on price, or brand upgrade delta automatically stamps the previous active record with `effectiveTo = new Date()` and inserts a fresh record with `effectiveFrom = new Date()`. Historical estimates retain their exact rates at time of creation.
+  * **Locations Management:** Dynamic location multipliers CRUD with slug validation and sort ordering.
+  * **Add-Ons Catalog:** Full 15 add-ons management with variant price history.
+  * **Specifications & Inclusions Matrix:** Category-item-option tree with package inclusion flags and additional cost rates.
+* `backend/src/modules/admin/admin-config.controller.ts` — Standardized REST API controllers for all configuration endpoints.
+* `backend/src/routes/admin-config.routes.ts` — Modular router guarded by `requireAdminAuth`.
+* `backend/src/routes/index.ts` — Mounted `/admin/config` in API v1 router.
+* `backend/src/modules/admin/admin-config.test.ts` — Automated integration test suite validating authentication guards, rate updates, price history versioning, location creation/updates, and add-on mutations.
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth Requirement |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/config/packages` | Lists all 4 packages with active prices, volume rates, and complete price audit history. | Admin Auth |
+| `PUT` | `/api/v1/admin/config/packages/:id/price` | Updates standard/volume rates by closing old record (`effectiveTo`) and inserting new price version. | Admin Auth |
+| `PATCH` | `/api/v1/admin/config/packages/:id` | Updates package metadata (name, tagline, description, colorTheme, sortOrder, isActive). | Admin Auth |
+| `GET` | `/api/v1/admin/config/locations` | Lists all configured city locations with price multipliers. | Admin Auth |
+| `POST` | `/api/v1/admin/config/locations` | Creates a new city location (e.g. Salem) with custom multiplier. | Admin Auth |
+| `PATCH` | `/api/v1/admin/config/locations/:id` | Updates city name, multiplier, sort order, or active status. | Admin Auth |
+| `GET` | `/api/v1/admin/config/addons` | Returns 15 add-ons catalog with active variant prices and audit trail. | Admin Auth |
+| `PUT` | `/api/v1/admin/config/addons/:id/price` | Updates add-on variant price with versioned effective date. | Admin Auth |
+| `PATCH` | `/api/v1/admin/config/addons/:id` | Updates add-on name, description, sort order, or active status. | Admin Auth |
+| `GET` | `/api/v1/admin/config/specifications` | Returns full specifications tree (10 categories, items, brand options, price deltas). | Admin Auth |
+| `PUT` | `/api/v1/admin/config/options/:id/price` | Updates brand upgrade delta rate with versioning. | Admin Auth |
+| `PATCH` | `/api/v1/admin/config/package-items/:id` | Updates package-level inclusions and additional cost unit rates. | Admin Auth |
+
+### 3. Automated Configuration Test Suite Results (`admin-config.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/admin/admin-config.test.ts`
+
+```
+⚙️ ASTHIWAR Admin Calculator Configuration & Pricing Test Suite — Phase 8
+-----------------------------------------------------------------
+
+[Test 1] Security Guard: Unauthorized Access Blocking (401)
+  ✅ PASS: GET /admin/config/packages without auth returns 401
+  ✅ PASS: Returns UNAUTHORIZED code
+
+[Test 2] Admin Login & Session Acquisition
+  ✅ PASS: Admin login returns 200 OK
+  ✅ PASS: Session cookie captured
+
+[Test 3] Packages Config & Versioned Pricing Mutation
+  ✅ PASS: GET /admin/config/packages returns 200 OK
+  ✅ PASS: Returns 4 packages
+  ✅ PASS: Standard package exists
+  ✅ PASS: PUT /admin/config/packages/:id/price returns 200 OK
+  ✅ PASS: New standard price is ₹2,499.00
+  ✅ PASS: New versioned price ID created (old price kept for history)
+  ✅ PASS: PATCH /admin/config/packages/:id returns 200 OK
+  ✅ PASS: Package tagline updated
+
+[Test 4] Locations Config: List, Create & Multiplier Update
+  ✅ PASS: GET /admin/config/locations returns 200 OK
+  ✅ PASS: Returns 6+ locations
+  ✅ PASS: POST /admin/config/locations returns 201 Created
+  ✅ PASS: Multiplier is 0.9700
+  ✅ PASS: PATCH /admin/config/locations/:id returns 200 OK
+  ✅ PASS: Location multiplier updated to 0.9900
+
+[Test 5] Add-Ons Config & Variant Pricing History
+  ✅ PASS: GET /admin/config/addons returns 200 OK
+  ✅ PASS: Returns 15 add-ons
+  ✅ PASS: Underground Sump add-on found
+  ✅ PASS: PUT /admin/config/addons/:id/price returns 200 OK
+  ✅ PASS: Addon price updated to ₹28.00/L
+
+[Test 6] Specifications & Package Inclusion Matrix
+  ✅ PASS: GET /admin/config/specifications returns 200 OK
+  ✅ PASS: Returns 10 specification categories
+
+-----------------------------------------------------------------
+Results: All Phase 8 Admin Configuration & Pricing Tests Passed!
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
+
+# Phase 9: Quotation PDF Generation & Document Streaming Engine
+
+**Date:** 2026-08-18 23:55 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/pdf/pdf.service.ts` — High-performance PDF generation engine built with `pdfkit` (pure JS, 0 binary dependencies, universal portability). Renders multi-page branded quotation documents with:
+  * **Branding & Header:** Asthiwar Design & Build identity, Tamil Nadu office references, and dynamic estimate reference badge (`EST-YYYY-XXXXXX`, creation date, 30-day validity).
+  * **Client & Project Specifications Card:** Customer details, plot location with dynamic location multiplier, total built-up sq.ft, floor configuration, and plot area.
+  * **Package Breakdown Table:** Base construction cost with rate per sq.ft and built-up area.
+  * **Brand Customizations Table:** Itemized brand upgrade deltas and calculated line additions.
+  * **Selected Add-Ons Table:** Variant specifications, quantities, unit prices, and line totals.
+  * **Commercial Summary Box:** Base cost, upgrades, add-ons subtotal, and total estimated project value in Indian Rupee format (`Rs. XX,XX,XXX`).
+  * **10-Stage Milestone Payment Schedule Table:** Multi-page table detailing all 10 construction milestones with exact percentage shares and balanced rupee amounts matching the total contract value.
+  * **Terms, Inclusions & Standard Exclusions:** 5-point contractual terms, rate basis, and payment guarantee notes.
+  * **Signatory Footers & Pagination:** Authorized signatory badge, client acceptance line, and dynamic `Page X of Y` footers.
+* `backend/src/modules/pdf/pdf.controller.ts` — Controller supporting both inline browser viewing (`Content-Disposition: inline`) and forced download (`Content-Disposition: attachment; filename="ASTHIWAR-EST-..."`) via `?download=true`.
+* `backend/src/routes/calculator.routes.ts` — Mounted public endpoint `GET /api/v1/calculator/estimate/:estimateNumber/pdf`.
+* `backend/src/routes/admin.routes.ts` — Mounted admin protected endpoint `GET /api/v1/admin/estimates/:id/pdf`.
+* `backend/src/modules/pdf/pdf.test.ts` — Automated integration test suite validating PDF creation, HTTP headers, `%PDF-` magic binary headers, and size benchmarks (>5KB).
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth Requirement |
+|---|---|---|---|
+| `GET` | `/api/v1/calculator/estimate/:estimateNumber/pdf` | Streams branded multi-page quotation PDF for customer viewing or download (`?download=true`). | Public |
+| `GET` | `/api/v1/admin/estimates/:id/pdf` | Generates / downloads estimate quotation PDF for admin dispatch. | Admin Auth |
+
+### 3. Automated PDF Generation Test Suite Results (`pdf.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/pdf/pdf.test.ts`
+
+```
+📄 ASTHIWAR Estimate PDF Generator Test Suite — Phase 9
+-----------------------------------------------------------------
+
+[Test 1] Create Test Estimate Snapshot with Customizations & Add-Ons
+  ✅ PASS: Public estimate created with 201 Created
+  ✅ PASS: Created estimate: EST-2026-768249
+
+[Test 2] Public PDF Quotation Generation & Binary Validation
+  ✅ PASS: GET estimate PDF returns 200 OK
+  ✅ PASS: Content-Type is application/pdf
+  ✅ PASS: Content-Disposition contains correct filename
+  ✅ PASS: PDF size is valid (8 KB)
+  ✅ PASS: Buffer starts with valid %PDF- magic header
+
+[Test 3] Admin PDF Download via Protected Route
+  ✅ PASS: Admin login returns 200 OK
+  ✅ PASS: GET /admin/estimates/:id/pdf returns 200 OK
+  ✅ PASS: Admin response is application/pdf
+  ✅ PASS: Content-Disposition is attachment when ?download=true is passed
+
+[Test 4] Non-existent Estimate PDF 404 Error Handling
+  ✅ PASS: Non-existent estimate returns 404
+  ✅ PASS: Returns ESTIMATE_NOT_FOUND code
+
+-----------------------------------------------------------------
+Results: All Phase 9 PDF Generation Tests Passed!
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
+
+# Phase 10: Notification Engine & Lead Alert Dispatcher
+
+**Date:** 2026-08-18 23:58 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `database/src/schema/notifications.ts` — Created `notifications` table schema tracking multi-channel dispatches (`EMAIL`, `WHATSAPP`, `SMS`), delivery status (`PENDING`, `SENT`, `FAILED`), recipients, payloads, and execution timestamps.
+* `database/drizzle/0001_worthless_earthquake.sql` — Applied Neon PostgreSQL schema migration for the `notifications` table.
+* `backend/src/modules/notifications/notifications.types.ts` — TypeScript interfaces for channel options, templates (`ESTIMATE_QUOTATION`, `NEW_LEAD_ALERT`, `FOLLOW_UP`), and log results.
+* `backend/src/modules/notifications/notifications.service.ts` — Core dispatch service:
+  * **Customer Estimate Dispatch:** Formats HTML quotation emails and WhatsApp text templates with cost breakdowns, dimensions, milestone highlights, and direct PDF download links.
+  * **Admin Lead Alerts:** Dispatches instant alerts to internal sales / engineering teams whenever a consultation lead is submitted.
+  * **Audit Trail & Resend:** Queries delivery history with pagination and provides single-click re-dispatch.
+* `backend/src/modules/notifications/notifications.controller.ts` — Express controllers for dispatch, auditing, and resending.
+* `backend/src/routes/admin.routes.ts` — Mounted notification management endpoints.
+* `backend/src/modules/notifications/notifications.test.ts` — Automated integration test suite validating customer quotation dispatches, admin alerts, log audits, and resend operations.
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth Requirement |
+|---|---|---|---|
+| `POST` | `/api/v1/admin/estimates/:id/notify` | Dispatches customer quotation via selected channels (`EMAIL`, `WHATSAPP`). | Admin Auth |
+| `POST` | `/api/v1/admin/enquiries/:id/notify` | Dispatches internal lead alert to sales team. | Admin Auth |
+| `GET` | `/api/v1/admin/notifications` | Retrieves paginated notification audit logs with channel and status filtering. | Admin Auth |
+| `POST` | `/api/v1/admin/notifications/:id/resend` | Retries / resends a specific notification record. | Admin Auth |
+
+### 3. Automated Notification Test Suite Results (`notifications.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/notifications/notifications.test.ts`
+
+```
+📬 ASTHIWAR Notification & Lead Alert Engine Test Suite — Phase 10
+-----------------------------------------------------------------
+
+[Test 1] Admin Authentication
+  ✅ PASS: Admin login returns 200 OK
+  ✅ PASS: Session cookie captured
+
+[Test 2] Seed Estimate & Enquiry for Dispatch
+  ✅ PASS: Public estimate created with 201 Created
+  ✅ PASS: Public enquiry created with 201 Created
+
+[Test 3] Dispatch Customer Estimate Quotation (Email + WhatsApp)
+  ✅ PASS: POST /admin/estimates/:id/notify returns 200 OK
+  ✅ PASS: Returns notifications array
+  ✅ PASS: Generated 2 notifications (Email & WhatsApp)
+  ✅ PASS: Email notification status is SENT
+  ✅ PASS: WhatsApp notification status is SENT
+
+[Test 4] Dispatch Admin Instant Lead Alert
+  ✅ PASS: POST /admin/enquiries/:id/notify returns 200 OK
+  ✅ PASS: Template is NEW_LEAD_ALERT
+  ✅ PASS: Alert status is SENT
+
+[Test 5] Notification Audit Logs & Pagination
+  ✅ PASS: GET /admin/notifications returns 200 OK
+  ✅ PASS: Returns log items array
+  ✅ PASS: Total logged notifications >= 3
+
+[Test 6] Resend Notification
+  ✅ PASS: POST /admin/notifications/:id/resend returns 200 OK
+  ✅ PASS: Resent notification ID matches
+  ✅ PASS: Status confirmed SENT
+
+-----------------------------------------------------------------
+Results: All Phase 10 Notification Engine Tests Passed!
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
+
+
+
+
