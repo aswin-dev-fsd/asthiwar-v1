@@ -2,7 +2,7 @@ export interface Location {
   id: number;
   name: string;
   slug: string;
-  priceMultiplier: string;
+  priceMultiplier: string | number;
   sortOrder: number;
 }
 
@@ -13,16 +13,23 @@ export interface Package {
   tagline: string;
   description: string;
   colorTheme: string;
-  standardPricePerSqft: number;
-  volumePricePerSqft: number;
-  volumeThresholdSqft: number;
+  standardPricePerSqft?: number;
+  volumePricePerSqft?: number;
+  volumeDiscountThresholdSqft?: number;
+  pricing?: {
+    standardRatePerSqft: number;
+    volumeDiscountThresholdSqft: number;
+    volumeRatePerSqft: number;
+  };
 }
 
 export interface BrandOption {
   id: number;
   slug: string;
   brandName: string;
-  isDefault: boolean;
+  specification?: string;
+  isDefault?: boolean;
+  isPackageDefault?: boolean;
   priceDelta: number;
   priceType: string;
 }
@@ -31,6 +38,7 @@ export interface SpecificationItem {
   id: number;
   slug: string;
   name: string;
+  description?: string;
   unit: string;
   isCustomizable: boolean;
   isIncluded: boolean;
@@ -48,7 +56,7 @@ export interface SpecificationCategory {
 }
 
 export interface AddonVariant {
-  id: number;
+  id?: number;
   variantSlug: string;
   variantName: string;
   packageTier: string;
@@ -68,33 +76,46 @@ export interface AddonItem {
 }
 
 export interface PackageConfigResponse {
-  packageSlug: string;
-  packageName: string;
-  standardPricePerSqft: number;
-  volumePricePerSqft: number;
+  package?: {
+    id: number;
+    slug: string;
+    name: string;
+    tagline: string;
+    description: string;
+    colorTheme: string;
+  };
+  packageSlug?: string;
+  packageName?: string;
+  standardPricePerSqft?: number;
+  volumePricePerSqft?: number;
   specifications: SpecificationCategory[];
   addons: AddonItem[];
 }
 
 export interface MilestoneStage {
-  stage: number;
-  name: string;
+  stage?: number;
+  stageNumber?: number;
+  name?: string;
+  stageName?: string;
   percentage: number;
   amount: number;
+  keyDeliverables?: string;
 }
 
 export interface CalculationBreakdown {
-  totalBuiltupAreaSqft: number;
-  isVolumeRateApplied: boolean;
-  basePackageRate: number;
-  locationMultiplier: number;
-  effectiveRatePerSqft: number;
+  totalBuiltupAreaSqft?: number;
+  isVolumeRateApplied?: boolean;
+  basePackageRate?: number;
+  locationMultiplier?: number;
+  effectiveRatePerSqft?: number;
   baseConstructionCost: number;
   upgradesCost: number;
   addonsCost: number;
   subtotalCost: number;
+  gstPercentage?: number;
   gstAmount: number;
   totalProjectCost: number;
+  effectiveTotalCostPerSqft?: number;
 }
 
 export interface CalculationResult {
@@ -106,15 +127,44 @@ export interface CalculationResult {
     email: string;
     location: string;
   };
+  dimensions?: {
+    plotAreaSqft: number;
+    plotAreaUnit: string;
+    builtupAreaPerFloorSqft: number;
+    floorCount: string;
+    numberOfFloors: number;
+    carParkingAreaSqft: number;
+    carCount: number;
+    totalBuiltupAreaSqft: number;
+  };
+  package?: {
+    id: number;
+    slug: string;
+    name: string;
+    tagline: string;
+    baseRatePerSqft: number;
+    effectiveRatePerSqft: number;
+    isVolumeRateApplied: boolean;
+    locationMultiplier: number;
+    locationName: string;
+  };
   breakdown: CalculationBreakdown;
+  duration?: {
+    estimatedMonthsRange: string;
+    minMonths: number;
+    maxMonths: number;
+  };
   milestones: MilestoneStage[];
-  customizationsSummary: Array<{
+  customizations?: Array<any>;
+  addons?: Array<any>;
+  disclaimers?: string[];
+  customizationsSummary?: Array<{
     category: string;
     item: string;
     brand: string;
     cost: number;
   }>;
-  addonsSummary: Array<{
+  addonsSummary?: Array<{
     name: string;
     variant: string;
     quantity: number;

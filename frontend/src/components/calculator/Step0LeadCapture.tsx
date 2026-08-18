@@ -108,7 +108,7 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
             <option value="">Select your site location...</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.name}>
-                {loc.name} {parseFloat(loc.priceMultiplier) !== 1.0 ? `(${loc.priceMultiplier}x rate)` : ''}
+                {loc.name} {Number(loc.priceMultiplier) !== 1.0 ? `(${loc.priceMultiplier}x rate)` : ''}
               </option>
             ))}
           </select>

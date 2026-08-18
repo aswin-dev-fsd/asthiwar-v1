@@ -7,6 +7,7 @@ import {
   Calculator,
   RefreshCw,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CalculationResult } from '../../types';
@@ -17,14 +18,40 @@ interface Step5Props {
   onReset: () => void;
 }
 
-function formatINR(amount: number | string): string {
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(num)) return 'Rs. 0';
-  return 'Rs. ' + num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+function formatINR(amount: number | string | undefined | null): string {
+  if (amount === undefined || amount === null) return '₹0';
+  const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+  if (isNaN(num)) return '₹0';
+  return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
 export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) => {
-  const { breakdown, milestones, customer } = result;
+  if (!result || !result.breakdown) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center asthiwar-card animate-fade-in">
+        <h3 className="text-xl font-bold text-white mb-2">Estimate Generation Incomplete</h3>
+        <p className="text-xs text-slate-400 mb-6">Could not load calculation breakdown. Please try recalculating.</p>
+        <button onClick={onReset} className="btn btn-primary">
+          <RefreshCw className="w-4 h-4 mr-2" /> Start Over
+        </button>
+      </div>
+    );
+  }
+
+  const breakdown = result.breakdown || {};
+  const customer = result.customer;
+  const dimensions = result.dimensions;
+  const pkg = result.package;
+  const milestones = result.milestones || [];
+
+  const totalCost = Number(breakdown.totalProjectCost || 0);
+  const builtupArea = Number(dimensions?.totalBuiltupAreaSqft || breakdown.totalBuiltupAreaSqft || 0);
+  const effectiveRate = Number(
+    pkg?.effectiveRatePerSqft ||
+      breakdown.effectiveTotalCostPerSqft ||
+      breakdown.effectiveRatePerSqft ||
+      (builtupArea > 0 ? totalCost / builtupArea : 0)
+  );
 
   // EMI Calculator State
   const [loanPercent, setLoanPercent] = useState<number>(80);
@@ -40,16 +67,20 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
 
   // Trigger celebration confetti on mount
   useEffect(() => {
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'],
-    });
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'],
+      });
+    } catch {
+      // Ignore confetti errors
+    }
   }, []);
 
   // Compute EMI
-  const loanAmount = (breakdown.totalProjectCost * loanPercent) / 100;
+  const loanAmount = (totalCost * loanPercent) / 100;
   const monthlyRate = interestRate / 12 / 100;
   const totalMonths = tenureYears * 12;
   const emi =
@@ -84,9 +115,9 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(
-      `🏗️ ASTHIWAR Construction Estimate (${result.estimateNumber})\nTotal Cost: ${formatINR(
-        breakdown.totalProjectCost
-      )}\nArea: ${breakdown.totalBuiltupAreaSqft} sq.ft\nLocation: ${customer?.location}\nDownload PDF: ${window.location.origin}/api/v1/calculator/estimate/${result.estimateNumber}/pdf`
+      `🏗️ ASTHIWAR Construction Estimate (${result.estimateNumber || 'Ref'})\nTotal Cost: ${formatINR(
+        totalCost
+      )}\nArea: ${builtupArea} sq.ft\nLocation: ${customer?.location || 'Tamil Nadu'}\nDownload PDF: ${window.location.origin}/api/v1/calculator/estimate/${result.estimateNumber}/pdf`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
@@ -98,30 +129,36 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="badge badge-gold">Verified Estimate</span>
+              <span className="badge badge-gold">
+                <Sparkles className="w-3 h-3" /> Verified Estimate
+              </span>
               <span className="text-xs text-slate-400 font-mono">
-                {result.estimateNumber}
+                {result.estimateNumber || 'EST-DRAFT'}
               </span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              {formatINR(breakdown.totalProjectCost)}
+              {formatINR(totalCost)}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 mt-1">
               Estimated Total Investment • Effective Rate:{' '}
               <strong className="text-amber-400">
-                {formatINR(breakdown.effectiveRatePerSqft)} / Sq.Ft
+                {formatINR(effectiveRate)} / Sq.Ft
               </strong>
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <a
-              href={`/api/v1/calculator/estimate/${result.estimateNumber}/pdf?download=true`}
-              className="btn btn-primary text-xs sm:text-sm py-3 px-5 shadow-lg shadow-amber-500/20"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download Quotation PDF</span>
-            </a>
+            {result.estimateNumber && (
+              <a
+                href={`/api/v1/calculator/estimate/${result.estimateNumber}/pdf?download=true`}
+                className="btn btn-primary text-xs sm:text-sm py-3 px-5 shadow-lg shadow-amber-500/20"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Quotation PDF</span>
+              </a>
+            )}
 
             <button
               onClick={handleWhatsAppShare}
@@ -138,7 +175,7 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
           <div>
             <span className="text-slate-400">Total Built-Up Area:</span>
             <div className="font-bold text-white text-sm">
-              {breakdown.totalBuiltupAreaSqft.toLocaleString('en-IN')} Sq.Ft
+              {builtupArea.toLocaleString('en-IN')} Sq.Ft
             </div>
           </div>
           <div>
@@ -150,13 +187,13 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
           <div>
             <span className="text-slate-400">Brand Upgrades:</span>
             <div className="font-bold text-white text-sm">
-              {formatINR(breakdown.upgradesCost)}
+              {formatINR(breakdown.upgradesCost || 0)}
             </div>
           </div>
           <div>
             <span className="text-slate-400">Add-Ons Subtotal:</span>
             <div className="font-bold text-white text-sm">
-              {formatINR(breakdown.addonsCost)}
+              {formatINR(breakdown.addonsCost || 0)}
             </div>
           </div>
         </div>
@@ -173,36 +210,45 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
               Zero front-loading. Payments strictly tied to verified civil site stages.
             </p>
           </div>
-          <span className="badge badge-blue">100% Balanced</span>
+          <span className="badge badge-gold">100% Balanced</span>
         </div>
 
         <div className="space-y-3">
-          {milestones.map((stage, idx) => (
-            <div
-              key={idx}
-              className="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
-                  {stage.stage || idx + 1}
-                </div>
-                <div>
-                  <h5 className="font-semibold text-xs text-white">{stage.name}</h5>
-                  <div className="w-36 sm:w-48 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
-                    <div
-                      className="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full"
-                      style={{ width: `${stage.percentage}%` }}
-                    />
+          {milestones.map((stage, idx) => {
+            const stageNum = stage.stageNumber || stage.stage || idx + 1;
+            const stageTitle = stage.stageName || stage.name || `Stage ${stageNum}`;
+            const amount = Number(stage.amount || 0);
+
+            return (
+              <div
+                key={idx}
+                className="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
+                    {stageNum}
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-xs text-white">{stageTitle}</h5>
+                    {stage.keyDeliverables && (
+                      <p className="text-[11px] text-slate-400 line-clamp-1">{stage.keyDeliverables}</p>
+                    )}
+                    <div className="w-36 sm:w-48 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                      <div
+                        className="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full"
+                        style={{ width: `${stage.percentage}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center text-xs">
-                <span className="text-slate-400 font-semibold">{stage.percentage}%</span>
-                <span className="font-bold text-white text-sm">{formatINR(stage.amount)}</span>
+                <div className="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center text-xs">
+                  <span className="text-slate-400 font-semibold">{stage.percentage}%</span>
+                  <span className="font-bold text-white text-sm">{formatINR(amount)}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -333,8 +379,8 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
                 </div>
 
                 <div className="text-xs text-slate-400">
-                  Site Location: <strong className="text-white">{customer?.location}</strong> • Ref:{' '}
-                  <strong className="text-amber-400">{result.estimateNumber}</strong>
+                  Site Location: <strong className="text-white">{customer?.location || 'Tamil Nadu'}</strong> • Ref:{' '}
+                  <strong className="text-amber-400">{result.estimateNumber || 'EST-REF'}</strong>
                 </div>
 
                 <div className="form-group">
