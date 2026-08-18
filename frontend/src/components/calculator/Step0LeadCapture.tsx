@@ -69,6 +69,11 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
               value={formData.customerPhone}
               onChange={(e) => onChange({ customerPhone: e.target.value.replace(/\D/g, '') })}
             />
+            {formData.customerPhone.length > 0 && !/^[6-9]\d{9}$/.test(formData.customerPhone) && (
+              <p className="text-red-400 text-xs mt-1.5">
+                Please enter a valid 10-digit Indian mobile number.
+              </p>
+            )}
           </div>
 
           <div className="form-group">
@@ -83,6 +88,11 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
               value={formData.customerEmail}
               onChange={(e) => onChange({ customerEmail: e.target.value })}
             />
+            {formData.customerEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail) && (
+              <p className="text-red-400 text-xs mt-1.5">
+                Please enter a valid email address.
+              </p>
+            )}
           </div>
         </div>
 
