@@ -72,7 +72,9 @@ export const Step3Packages: React.FC<Step3Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {packages.map((pkg) => {
           const isSelected = formData.packageSlug === pkg.slug;
-          const rate = isVolume ? pkg.volumePricePerSqft : pkg.standardPricePerSqft;
+          const stdRate = Number(pkg.standardPricePerSqft ?? (pkg as any).pricing?.standardRatePerSqft ?? 0);
+          const volRate = Number(pkg.volumePricePerSqft ?? (pkg as any).pricing?.volumeRatePerSqft ?? stdRate);
+          const rate = isVolume ? volRate : stdRate;
           const highlights = PACKAGE_HIGHLIGHTS[pkg.slug] || [];
           const isPopular = pkg.slug === 'premium';
 

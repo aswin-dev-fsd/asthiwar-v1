@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { CalculatorWizard } from './components/calculator/CalculatorWizard';
@@ -6,11 +6,30 @@ import { AdminPortal } from './components/admin/AdminPortal';
 import { Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'calculator' | 'admin'>('calculator');
+  const [currentView, setCurrentView] = useState<'calculator' | 'admin'>(() => {
+    return window.location.pathname.startsWith('/admin') ? 'admin' : 'calculator';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentView(window.location.pathname.startsWith('/admin') ? 'admin' : 'calculator');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (view: 'calculator' | 'admin') => {
+    setCurrentView(view);
+    const targetUrl = view === 'admin' ? '/admin' : '/';
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({}, '', targetUrl);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950">
-      <Header currentView={currentView} onNavigate={(v) => setCurrentView(v)} />
+      <Header currentView={currentView} onNavigate={navigateTo} />
 
       <main className="flex-grow">
         {currentView === 'calculator' ? (
@@ -36,7 +55,7 @@ export const App: React.FC = () => {
             <CalculatorWizard />
           </div>
         ) : (
-          <AdminPortal onBackToCalculator={() => setCurrentView('calculator')} />
+          <AdminPortal onBackToCalculator={() => navigateTo('calculator')} />
         )}
       </main>
 

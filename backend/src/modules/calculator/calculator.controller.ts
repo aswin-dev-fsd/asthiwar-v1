@@ -15,6 +15,7 @@ import {
   eq,
   and,
   asc,
+  isNull,
 } from '@asthiwar/database';
 import { calculateEstimate } from './calculator.service.js';
 import { CalculatorInput } from './calculator.types.js';
@@ -73,7 +74,12 @@ export async function getPackages(req: Request, res: Response, next: NextFunctio
       })
       .from(packages)
       .innerJoin(packagePrices, eq(packagePrices.packageId, packages.id))
-      .where(eq(packages.isActive, true))
+      .where(
+        and(
+          eq(packages.isActive, true),
+          isNull(packagePrices.effectiveTo)
+        )
+      )
       .orderBy(asc(packages.sortOrder));
 
     res.json({
@@ -86,6 +92,9 @@ export async function getPackages(req: Request, res: Response, next: NextFunctio
         description: p.description,
         colorTheme: p.colorTheme,
         sortOrder: p.sortOrder,
+        standardPricePerSqft: Number(p.pricePerSqft),
+        volumePricePerSqft: Number(p.volumePricePerSqft),
+        volumeDiscountThresholdSqft: p.volumeDiscountThresholdSqft,
         pricing: {
           standardRatePerSqft: Number(p.pricePerSqft),
           volumeDiscountThresholdSqft: p.volumeDiscountThresholdSqft,
