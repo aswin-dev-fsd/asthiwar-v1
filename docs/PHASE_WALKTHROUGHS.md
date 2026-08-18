@@ -212,3 +212,104 @@ admin_users          1
 * **bcrypt** added to `@asthiwar/database` dependencies (salt rounds = 12).
 
 ---
+
+# Phase 4: Authoritative Pricing & Calculation Engine
+
+**Date:** 2026-08-18 23:28 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/calculator/calculator.types.ts` — Complete TypeScript interfaces for inputs, intermediate calculations, snapshots, milestone schedules, and final estimate response.
+* `backend/src/modules/calculator/calculator.schema.ts` — Zod request validation schema for input payloads.
+* `backend/src/modules/calculator/calculator.service.ts` — Authoritative calculation engine with unit conversions, volume threshold triggers, location multipliers, brand delta pricing, add-ons calculation, 10-stage milestone generation, estimate number generation, and immutable database snapshot persistence.
+* `backend/src/modules/calculator/calculator.test.ts` — Comprehensive automated verification test suite.
+* `database/src/index.ts` — Re-exported Drizzle ORM query operators for unified type resolution across workspaces.
+
+### 2. Core Calculation Rules Implemented
+
+| Rule | Implementation Details |
+|---|---|
+| **Area Normalization** | Converts `cents` ($\times 435.6$), `sqyards` ($\times 9$), and `sqft` ($\times 1$). |
+| **Total Built-up Area** | $\text{Total Sq.Ft} = (\text{Built-up per floor} \times \text{Number of Floors}) + \text{Car Parking Area}$. |
+| **Standard vs. Volume Rate** | Automatically toggles to volume rate when total built-up area $> 3,500\text{ sq.ft}$. |
+| **Location Multipliers** | Dynamically resolves city multiplier (e.g. Chennai $1.05\times$, Coimbatore $1.00\times$, Pollachi $0.96\times$). |
+| **Brand Customizations** | Computes per-sq.ft rate additions (e.g. Red brick $+₹100$/sq.ft or $+₹120$/sq.ft) and additional cost items (Waterproofing $+₹10$/sq.ft). |
+| **15 Add-Ons Calculation** | Resolves variant prices with multi-unit support (`per_litre`, `per_rft`, `per_sqft_gate`, `per_sqft_terrace`, `fixed`). |
+| **10-Stage Milestones** | Exact percentage breakdown (Stage 1 to 10) with zero-rounding-error balancing to ensure the sum strictly equals `totalProjectCost` to the single rupee. |
+| **Human-Readable ID** | Generates unique format: `EST-YYYY-XXXXXX` (e.g. `EST-2026-417145`). |
+| **Immutable Snapshots** | When persisted, records full calculation state, individual item selections in `estimate_items`, and addon items in `estimate_addons`. |
+
+### 3. Automated Test Suite Results (`calculator.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/calculator/calculator.test.ts`
+
+```
+📐 ASTHIWAR Calculation Engine Test Suite — Phase 4
+----------------------------------------------------
+
+[Test 1] Area Unit Conversions
+  ✅ PASS: 3 Cents converts to 1306.8 sq.ft
+  ✅ PASS: 200 Sq.Yards converts to 1800 sq.ft
+  ✅ PASS: 1500 Sq.Ft converts directly to 1500 sq.ft
+
+[Test 2] Standard Rate Calculation (<= 3,500 sq.ft)
+  ✅ PASS: Total builtup area is 2000 sqft
+  ✅ PASS: Standard rate is applied (not volume)
+  ✅ PASS: Base rate is ₹2,468 / sqft
+  ✅ PASS: Base cost is exactly ₹49,36,000
+  ✅ PASS: Total project cost matches subtotal without add-ons
+
+[Test 3] Volume Rate Trigger (> 3,500 sq.ft)
+  ✅ PASS: Total builtup area is 4000 sqft
+  ✅ PASS: Volume discount rate is applied
+  ✅ PASS: Volume base rate is ₹2,000 / sqft (standard is ₹2,099)
+  ✅ PASS: Base cost is exactly ₹80,00,000
+
+[Test 4] City Location Multipliers
+  ✅ PASS: Chennai location multiplier is 1.05
+  ✅ PASS: Effective rate in Chennai is ₹2,591.40 / sqft
+  ✅ PASS: Base cost in Chennai is ₹25,91,400
+  ✅ PASS: Pollachi location multiplier is 0.96
+  ✅ PASS: Effective rate in Pollachi is ₹2,369.28 / sqft
+
+[Test 5] Customizations & Brand Upgrades
+  ✅ PASS: 1 customization recognized
+  ✅ PASS: Red brick upgrade delta is ₹100/sqft
+  ✅ PASS: Red brick calculated price is ₹2,00,000 (2000 sqft * ₹100)
+  ✅ PASS: Total upgrades cost is ₹2,00,000
+  ✅ PASS: Total project cost includes upgrades (₹51,36,000)
+
+[Test 6] Add-Ons Calculations
+  ✅ PASS: 3 add-ons recognized
+  ✅ PASS: 5000L Flyash Sump is ₹1,30,000 (@ ₹26/L)
+  ✅ PASS: 3kW Solar is ₹1,80,000
+  ✅ PASS: 4-Pax Lift is ₹12,50,000
+  ✅ PASS: Addons cost is exactly ₹15,60,000
+
+[Test 7] 10-Stage Milestone Phase Breakdown
+  ✅ PASS: 10 milestones generated
+  ✅ PASS: Sum of all 10 milestone amounts (₹4936000) exactly equals totalProjectCost (₹4936000)
+  ✅ PASS: Total milestone percentages sum to exactly 100%
+
+[Test 8] Estimate Number Format
+  ✅ PASS: Estimate Number 'EST-2026-417145' matches 'EST-YYYY-XXXXXX' format
+
+[Test 9] Live Neon PostgreSQL Persistence & Snapshot Verification
+  ✅ PASS: Estimate successfully saved with UUID: 29a9d84d-5c20-47e1-bc66-052cadd52553
+  ✅ PASS: Estimate found in database
+  ✅ PASS: DB Estimate number matches
+  ✅ PASS: DB Total cost matches calculation
+  ✅ PASS: 1 Customization item saved in DB (Red Bricks)
+  ✅ PASS: 2 Add-ons saved in DB (Sump & Solar)
+
+----------------------------------------------------
+Results: 37 Passed, 0 Failed
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
