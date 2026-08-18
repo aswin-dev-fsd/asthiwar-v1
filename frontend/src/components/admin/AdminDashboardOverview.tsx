@@ -10,14 +10,17 @@ import {
 } from 'lucide-react';
 import { getDashboardAnalytics } from '../../services/adminApi';
 
-function formatINR(amount: number): string {
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(2)} Cr`;
+function formatINR(amount: number | string | undefined | null): string {
+  if (amount === undefined || amount === null) return '₹0';
+  const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+  if (isNaN(num) || num === 0) return '₹0';
+  if (num >= 10000000) {
+    return `₹${(num / 10000000).toFixed(2)} Cr`;
   }
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(2)} Lakh`;
+  if (num >= 100000) {
+    return `₹${(num / 100000).toFixed(2)} Lakh`;
   }
-  return `₹${amount.toLocaleString('en-IN')}`;
+  return `₹${num.toLocaleString('en-IN')}`;
 }
 
 export const AdminDashboardOverview: React.FC = () => {
@@ -55,7 +58,15 @@ export const AdminDashboardOverview: React.FC = () => {
     );
   }
 
-  const { metrics, recentEnquiries, estimatesByPackage } = data;
+  const metrics = data?.metrics || {
+    totalPipelineValue: 0,
+    totalEstimates: 0,
+    totalEnquiries: 0,
+    newEnquiriesCount: 0,
+    averageEstimateValue: 0,
+  };
+  const recentEnquiries = data?.recentEnquiries || [];
+  const estimatesByPackage = data?.estimatesByPackage || [];
 
   return (
     <div className="space-y-8 animate-fade-in">

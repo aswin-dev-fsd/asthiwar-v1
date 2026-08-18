@@ -16,6 +16,7 @@ import { AdminDashboardOverview } from './AdminDashboardOverview';
 import { AdminEnquiriesManager } from './AdminEnquiriesManager';
 import { AdminEstimatesExplorer } from './AdminEstimatesExplorer';
 import { AdminPricingConfigManager } from './AdminPricingConfigManager';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface AdminPortalProps {
   onBackToCalculator: () => void;
@@ -129,10 +130,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCalculator }) 
       </div>
 
       {/* Tab Panels */}
-      {activeTab === 'overview' && <AdminDashboardOverview />}
-      {activeTab === 'enquiries' && <AdminEnquiriesManager />}
-      {activeTab === 'estimates' && <AdminEstimatesExplorer />}
-      {activeTab === 'pricing' && <AdminPricingConfigManager />}
+      <ErrorBoundary fallbackTitle="Admin Tab Error">
+        {activeTab === 'overview' && <AdminDashboardOverview />}
+        {activeTab === 'enquiries' && <AdminEnquiriesManager />}
+        {activeTab === 'estimates' && <AdminEstimatesExplorer />}
+        {activeTab === 'pricing' && <AdminPricingConfigManager />}
+      </ErrorBoundary>
     </div>
   );
 };
