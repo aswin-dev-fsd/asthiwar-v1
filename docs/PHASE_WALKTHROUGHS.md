@@ -411,3 +411,92 @@ Results: 34 Passed, 0 Failed
 * `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
 
 ---
+
+# Phase 6: Admin Authentication & Security (`/api/v1/admin/auth/*`)
+
+**Date:** 2026-08-18 23:34 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/auth/auth.types.ts` — TypeScript interfaces for `AdminUserDto`, `SessionResult`, and global Express `req.user` & `req.sessionToken` augmentations.
+* `backend/src/modules/auth/auth.schema.ts` — Zod request validation schemas for login and password change.
+* `backend/src/modules/auth/auth.service.ts` — Core authentication service managing bcrypt password verification, 7-day session tokens in Neon PostgreSQL (`admin_sessions`), session verification, session invalidation on logout, and password change with multi-session revocation.
+* `backend/src/middleware/auth.ts` — `requireAdminAuth` guard middleware supporting both HttpOnly cookies (`asthiwar_session`) and `Authorization: Bearer <token>` headers.
+* `backend/src/modules/auth/auth.controller.ts` — Express controllers for login (sets HttpOnly cookie), logout (clears cookie & deletes session in DB), current user verification (`/me`), and password change.
+* `backend/src/routes/auth.routes.ts` — Express router with brute-force rate-limiting on login (10 attempts per 15 mins).
+* `backend/src/routes/index.ts` — Mounted `/admin/auth` in API v1 router.
+* `backend/src/modules/auth/auth.test.ts` — Complete automated integration test suite testing all authentication flows.
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth Requirement |
+|---|---|---|---|
+| `POST` | `/api/v1/admin/auth/login` | Authenticates with email & bcrypt password, returns user & session token, sets HttpOnly cookie (Rate-limited: 10/15min). | Public |
+| `POST` | `/api/v1/admin/auth/logout` | Revokes current session from `admin_sessions` in Neon DB and clears cookie. | Admin Auth |
+| `GET` | `/api/v1/admin/auth/me` | Returns current authenticated admin user profile (`super_admin`). | Admin Auth |
+| `POST` | `/api/v1/admin/auth/change-password` | Verifies current password, hashes new password with bcrypt (12 rounds), updates DB, and revokes all user sessions. | Admin Auth |
+
+### 3. Automated Authentication Test Suite Results (`auth.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/auth/auth.test.ts`
+
+```
+🔐 ASTHIWAR Admin Authentication & Security Test Suite — Phase 6
+-----------------------------------------------------------------
+
+[Test 1] POST /api/v1/admin/auth/login (Valid credentials)
+  ✅ PASS: Status code is 200
+  ✅ PASS: Response has success: true
+  ✅ PASS: Returns session token
+  ✅ PASS: Returns correct admin email
+  ✅ PASS: Role is super_admin
+  ✅ PASS: Sets session cookie in response
+  ✅ PASS: Cookie name is asthiwar_session
+  ✅ PASS: Cookie has HttpOnly flag
+
+[Test 2] POST /api/v1/admin/auth/login (Non-existent email)
+  ✅ PASS: Status code is 401 (Unauthorized)
+  ✅ PASS: Returns INVALID_CREDENTIALS
+
+[Test 3] POST /api/v1/admin/auth/login (Wrong password)
+  ✅ PASS: Status code is 401 (Unauthorized)
+  ✅ PASS: Returns INVALID_CREDENTIALS
+
+[Test 4] GET /api/v1/admin/auth/me (Using HttpOnly Cookie)
+  ✅ PASS: Status code is 200
+  ✅ PASS: User profile verified via cookie
+
+[Test 5] GET /api/v1/admin/auth/me (Using Authorization: Bearer Header)
+  ✅ PASS: Status code is 200
+  ✅ PASS: User profile verified via Bearer header
+
+[Test 6] GET /api/v1/admin/auth/me (Missing token - Guard Check)
+  ✅ PASS: Status code is 401 (Unauthorized)
+  ✅ PASS: Returns UNAUTHORIZED code
+
+[Test 7] GET /api/v1/admin/auth/me (Invalid session token)
+  ✅ PASS: Status code is 401
+  ✅ PASS: Returns SESSION_EXPIRED code
+
+[Test 8] POST /api/v1/admin/auth/logout (Session Revocation)
+  ✅ PASS: Status code is 200 (Logged out)
+  ✅ PASS: Session token was deleted from Neon PostgreSQL
+  ✅ PASS: Revoked token correctly returns 401
+
+[Test 9] Password Change Workflow & All-Sessions Revocation
+  ✅ PASS: Password changed successfully
+  ✅ PASS: Login with old password fails
+  ✅ PASS: Login with new password succeeds
+  ✅ PASS: Original admin password restored for dev convenience
+
+-----------------------------------------------------------------
+Results: 27 Passed, 0 Failed
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
