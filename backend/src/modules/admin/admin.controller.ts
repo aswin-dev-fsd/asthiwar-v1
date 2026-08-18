@@ -136,16 +136,44 @@ export async function updateEstimateController(req: Request, res: Response, next
   }
 }
 
-// ----------------------------------------------------
-// ANALYTICS CONTROLLER
-// ----------------------------------------------------
-
 export async function getDashboardAnalyticsController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const analytics = await getAdminDashboardAnalytics();
     res.json({
       success: true,
       data: analytics,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------
+// AUDIT LOGS CONTROLLER
+// ----------------------------------------------------
+
+import { queryAuditLogs } from '../../services/audit.service.js';
+
+export async function getAuditLogsController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const filters = {
+      eventType: req.query.eventType as string | undefined,
+      action: req.query.action as string | undefined,
+      severity: req.query.severity as string | undefined,
+      startDate: req.query.startDate as string | undefined,
+      endDate: req.query.endDate as string | undefined,
+      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+    };
+
+    const result = await queryAuditLogs(filters);
+    res.json({
+      success: true,
+      data: result.items,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+      },
     });
   } catch (error) {
     next(error);

@@ -15,6 +15,13 @@
       "when": 1787077567626,
       "tag": "0001_worthless_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787081169171,
+      "tag": "0002_slippery_star_brand",
+      "breakpoints": true
     }
   ]
 }

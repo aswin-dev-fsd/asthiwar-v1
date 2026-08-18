@@ -78,8 +78,11 @@ router.get('/notifications', getNotificationLogsController);
 router.post('/notifications/:id/resend', resendNotificationController);
 
 // ----------------------------------------------------
-// ANALYTICS ROUTES (/api/v1/admin/analytics)
+// ANALYTICS & AUDIT LOGS ROUTES
 // ----------------------------------------------------
 router.get('/analytics/dashboard', getDashboardAnalyticsController);
+
+import { getAuditLogsController } from '../modules/admin/admin.controller.js';
+router.get('/audit-logs', getAuditLogsController);
 
 export default router;

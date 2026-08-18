@@ -285,10 +285,29 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
 // 4. POST /api/v1/calculator/preview
 // ---------------------------------------------------------------------------
 
+import { logAuditEvent } from '../../services/audit.service.js';
+
 export async function previewEstimate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = req.body as CalculatorInput;
     const result = await calculateEstimate(input, { persist: false });
+
+    logAuditEvent({
+      eventType: 'CALCULATOR_SUBMISSION',
+      action: 'ESTIMATE_PREVIEW_CALCULATED',
+      severity: 'LOW',
+      actorType: 'ANONYMOUS_USER',
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+      metadata: {
+        package: input.packageSlug,
+        location: input.plotLocation,
+        totalCost: result.breakdown.totalProjectCost,
+      },
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    }).catch(() => {});
 
     res.json({
       success: true,
@@ -307,6 +326,27 @@ export async function createEstimate(req: Request, res: Response, next: NextFunc
   try {
     const input = req.body as CalculatorInput;
     const result = await calculateEstimate(input, { persist: true });
+
+    logAuditEvent({
+      eventType: 'CALCULATOR_SUBMISSION',
+      action: 'AUTHORITATIVE_ESTIMATE_CREATED',
+      severity: 'INFO',
+      actorType: 'ANONYMOUS_USER',
+      actorId: input.customerPhone,
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 201,
+      metadata: {
+        estimateNumber: result.estimateNumber,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        package: input.packageSlug,
+        location: input.plotLocation,
+        totalCost: result.breakdown.totalProjectCost,
+      },
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    }).catch(() => {});
 
     res.status(201).json({
       success: true,

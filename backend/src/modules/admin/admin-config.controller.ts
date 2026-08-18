@@ -41,11 +41,33 @@ export async function getPackagesController(req: Request, res: Response, next: N
   }
 }
 
+import { logAuditEvent } from '../../services/audit.service.js';
+
 export async function updatePackagePriceController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const packageId = parseInt(req.params.id as string, 10);
     const dto = req.body as UpdatePackagePriceDto;
     const newPrice = await updateAdminPackagePrice(packageId, dto);
+
+    logAuditEvent({
+      eventType: 'ADMIN_MUTATION',
+      action: 'UPDATE_PACKAGE_PRICE',
+      severity: 'HIGH',
+      actorType: 'ADMIN',
+      actorId: (req as any).adminUser?.email || (req as any).adminUser?.id,
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+      metadata: {
+        packageId,
+        pricePerSqft: dto.pricePerSqft,
+        volumePricePerSqft: dto.volumePricePerSqft,
+        volumeDiscountThresholdSqft: dto.volumeDiscountThresholdSqft,
+      },
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    }).catch(() => {});
+
     res.json({
       success: true,
       message: 'Package price updated successfully with history versioning',

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { env } from '../config/env.js';
+import { logAuditEvent } from '../services/audit.service.js';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -15,25 +16,46 @@ export function errorHandler(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ): void {
-  // Handle Zod Validation Errors
-  if (err instanceof ZodError) {
-    res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request data',
-        details: err.errors.map((e) => ({
+  const statusCode = err instanceof ZodError ? 400 : err.statusCode || 500;
+  const code =
+    err instanceof ZodError
+      ? 'VALIDATION_ERROR'
+      : err.code || (statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST');
+  const message =
+    err instanceof ZodError
+      ? 'Invalid request data'
+      : err.message || 'An unexpected error occurred';
+
+  const details =
+    err instanceof ZodError
+      ? err.errors.map((e) => ({
           path: e.path.join('.'),
           message: e.message,
-        })),
-      },
-    });
-    return;
-  }
+        }))
+      : err.details;
 
-  const statusCode = err.statusCode || 500;
-  const code = err.code || (statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST');
-  const message = err.message || 'An unexpected error occurred';
+  // Asynchronously record into PostgreSQL audit_logs table
+  logAuditEvent({
+    eventType: statusCode >= 500 ? 'ERROR' : 'WARN',
+    action: 'API_ERROR_INTERCEPTED',
+    severity: statusCode >= 500 ? 'CRITICAL' : 'MEDIUM',
+    actorType: (req as any).adminUser ? 'ADMIN' : 'ANONYMOUS_USER',
+    actorId: (req as any).adminUser?.id || (req as any).adminUser?.email || null,
+    endpoint: req.originalUrl,
+    httpMethod: req.method,
+    statusCode,
+    errorMessage: message,
+    errorStack: err.stack,
+    metadata: {
+      errorCode: code,
+      body: req.body,
+      query: req.query,
+      params: req.params,
+      details,
+    },
+    ipAddress: req.ip || req.socket?.remoteAddress,
+    userAgent: req.headers['user-agent'],
+  }).catch(() => {});
 
   if (statusCode >= 500) {
     console.error(`[ERROR 500] ${req.method} ${req.originalUrl}:`, err);
@@ -44,7 +66,8 @@ export function errorHandler(
     error: {
       code,
       message,
-      ...(env.NODE_ENV === 'development' ? { stack: err.stack, details: err.details } : {}),
+      ...(details ? { details } : {}),
+      ...(env.NODE_ENV === 'development' ? { stack: err.stack } : {}),
     },
   });
 }
