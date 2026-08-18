@@ -313,3 +313,101 @@ Results: 37 Passed, 0 Failed
 * `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
 
 ---
+
+# Phase 5: Public API Endpoints (`/api/v1/calculator/*` & `/api/v1/enquiries`)
+
+**Date:** 2026-08-18 23:31 IST  
+**Status:** ✅ Completed & Verified
+
+### 1. Implementation Summary
+
+**Files Created / Modified:**
+* `backend/src/modules/calculator/calculator.controller.ts` — Handlers for active locations, packages with two-tier pricing, package-specific configuration with brand options and 15 add-ons, on-the-fly preview calculation, authoritative DB-persisted estimate creation, and historical estimate snapshot lookup by estimate number.
+* `backend/src/modules/enquiries/enquiries.schema.ts` — Zod schema validating consultation lead submissions.
+* `backend/src/modules/enquiries/enquiries.controller.ts` — Handler saving consultation requests linked to estimate numbers.
+* `backend/src/routes/calculator.routes.ts` — Express router with validation middleware for all calculator routes.
+* `backend/src/routes/enquiries.routes.ts` — Express router for consultation lead capture.
+* `backend/src/routes/index.ts` — Mounted `/calculator` and `/enquiries` in API v1 router.
+* `backend/src/modules/calculator/api.test.ts` — Complete automated integration test suite testing all REST API endpoints.
+
+### 2. Endpoints Exposed & Tested
+
+| Method | Route | Description | Auth |
+|---|---|---|---|
+| `GET` | `/api/v1/calculator/locations` | Returns active cities with location price multipliers (Coimbatore, Pollachi, Tiruppur, Erode, Chennai, Other TN). | Public |
+| `GET` | `/api/v1/calculator/packages` | Returns 4 packages with summaries, descriptions, taglines, color themes, and active two-tier rates. | Public |
+| `GET` | `/api/v1/calculator/config/:packageSlug` | Returns category-grouped specification items, package default brands, upgrade options, and 15 add-on variants. | Public |
+| `POST` | `/api/v1/calculator/preview` | Calculates complete estimate on the fly without database persistence (for real-time frontend sliders). | Public |
+| `POST` | `/api/v1/calculator/estimate` | Authoritative calculation + generates `EST-YYYY-XXXXXX` + creates immutable snapshot in Neon DB. | Public |
+| `GET` | `/api/v1/calculator/estimate/:estimateNumber` | Retrieves historical immutable snapshot by estimate number for sharing / PDF rendering. | Public |
+| `POST` | `/api/v1/enquiries` | Submits customer consultation lead linked to estimate number. | Public |
+
+### 3. Automated API Integration Test Suite Results (`api.test.ts`)
+
+**Execution Command:** `npx tsx backend/src/modules/calculator/api.test.ts`
+
+```
+🌐 ASTHIWAR Public REST API Test Suite — Phase 5
+----------------------------------------------------
+
+[Test 1] GET /api/v1/calculator/locations
+  ✅ PASS: Status code is 200
+  ✅ PASS: Response has success: true
+  ✅ PASS: Returns data array
+  ✅ PASS: Returns 6 active locations
+  ✅ PASS: Chennai multiplier is 1.05
+
+[Test 2] GET /api/v1/calculator/packages
+  ✅ PASS: Status code is 200
+  ✅ PASS: Returns 4 packages
+  ✅ PASS: Basic standard rate is ₹2,099/sqft
+  ✅ PASS: Basic volume rate is ₹2,000/sqft
+
+[Test 3] GET /api/v1/calculator/config/standard
+  ✅ PASS: Status code is 200
+  ✅ PASS: Package slug is standard
+  ✅ PASS: Returns specifications array
+  ✅ PASS: Contains 10 category groups
+  ✅ PASS: Returns addons array
+  ✅ PASS: Contains 15 add-ons catalog items
+
+[Test 4] GET /api/v1/calculator/config/non-existent-package (404)
+  ✅ PASS: Status code is 404
+  ✅ PASS: Returns PACKAGE_NOT_FOUND error code
+
+[Test 5] POST /api/v1/calculator/preview
+  ✅ PASS: Status code is 200
+  ✅ PASS: Calculated total cost is ₹49,36,000
+  ✅ PASS: No estimateId generated (preview only, no DB save)
+
+[Test 6] POST /api/v1/calculator/estimate (DB Persist)
+  ✅ PASS: Status code is 201 (Created)
+  ✅ PASS: Estimate ID generated: dc918968-64d7-4781-b3fc-05473534b8dc
+  ✅ PASS: Estimate Number: EST-2026-936396
+
+[Test 7] GET /api/v1/calculator/estimate/:estimateNumber
+  ✅ PASS: Status code is 200
+  ✅ PASS: Fetched estimate number matches
+  ✅ PASS: Customer name matches
+  ✅ PASS: Contains 10 milestone stages in snapshot
+
+[Test 8] POST /api/v1/enquiries
+  ✅ PASS: Status code is 201
+  ✅ PASS: Enquiry status is NEW
+  ✅ PASS: Enquiry linked to estimate number
+
+[Test 9] Validation Failure Handling (400 Bad Request)
+  ✅ PASS: Status code is 400 (Bad Request)
+  ✅ PASS: Returns VALIDATION_ERROR code
+  ✅ PASS: Returns array of validation details
+  ✅ PASS: Captured 8 validation errors
+
+----------------------------------------------------
+Results: 34 Passed, 0 Failed
+```
+
+### 4. Build & Type Verification
+* `npm run check-types`: **0 Errors** across all packages.
+* `npm run build`: **0 Errors** compiling all TypeScript code to `dist/`.
+
+---
