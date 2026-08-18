@@ -5,14 +5,17 @@
   "description": "ASTHIWAR Design & Build - Monorepo",
   "workspaces": [
     "database",
-    "backend"
+    "backend",
+    "frontend"
   ],
   "scripts": {
     "dev:backend": "npm --workspace=backend run dev",
+    "dev:frontend": "npm --workspace=frontend run dev",
     "build:backend": "npm --workspace=backend run build",
     "build:database": "npm --workspace=database run build",
-    "build": "npm run build:database && npm run build:backend",
-    "check-types": "npm --workspace=database run check-types && npm --workspace=backend run check-types",
+    "build:frontend": "npm --workspace=frontend run build",
+    "build": "npm run build:database && npm run build:backend && npm run build:frontend",
+    "check-types": "npm --workspace=database run check-types && npm --workspace=backend run check-types && npm --workspace=frontend run check-types",
     "db:generate": "npm --workspace=database run db:generate",
     "db:migrate": "npm --workspace=database run db:migrate",
     "db:seed": "npm --workspace=database run db:seed"

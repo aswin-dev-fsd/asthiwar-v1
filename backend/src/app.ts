@@ -1,4 +1,4 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -17,7 +17,7 @@ export function createApp(): Express {
   const allowedOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
   app.use(
     cors({
-      origin: (origin, callback) => {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
         // Allow requests with no origin (like mobile apps, curl, server-to-server)
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
@@ -42,7 +42,7 @@ export function createApp(): Express {
   app.use('/api/v1', routes);
 
   // 404 Handler for unknown routes
-  app.use((req, res) => {
+  app.use((req: Request, res: Response) => {
     res.status(404).json({
       success: false,
       error: {
