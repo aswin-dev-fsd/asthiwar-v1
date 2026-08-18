@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ==========================================================================
    ASTHIWAR DESIGN & BUILD — DESIGN SYSTEM & BASE STYLESHEET
    ========================================================================== */
