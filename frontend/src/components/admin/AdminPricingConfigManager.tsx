@@ -42,12 +42,14 @@ export const AdminPricingConfigManager: React.FC = () => {
         setAddons(adds);
         setLocations(locs);
 
-        // Initialize edit states
+        // Initialize edit states with active database values
         const pkgMap: any = {};
         pkgs.forEach((p) => {
+          const std = p.activePrice?.pricePerSqft ?? p.pricePerSqft ?? p.standardPricePerSqft ?? 0;
+          const vol = p.activePrice?.volumePricePerSqft ?? p.volumePricePerSqft ?? 0;
           pkgMap[p.slug] = {
-            std: p.standardPricePerSqft,
-            vol: p.volumePricePerSqft,
+            std: Number(std),
+            vol: Number(vol),
             reason: '',
           };
         });
@@ -55,9 +57,11 @@ export const AdminPricingConfigManager: React.FC = () => {
 
         const addMap: any = {};
         adds.forEach((a) => {
-          a.variants.forEach((v: any) => {
-            addMap[`${a.slug}:${v.variantSlug}`] = {
-              price: v.price,
+          const variantsList = a.variants || a.activePrices || [];
+          variantsList.forEach((v: any) => {
+            const vSlug = v.variantSlug || v.slug;
+            addMap[`${a.slug}:${vSlug}`] = {
+              price: Number(v.price ?? 0),
               reason: '',
             };
           });
@@ -66,7 +70,7 @@ export const AdminPricingConfigManager: React.FC = () => {
 
         const locMap: any = {};
         locs.forEach((l) => {
-          locMap[l.id] = l.priceMultiplier;
+          locMap[l.id] = Number(l.priceMultiplier ?? 1.0);
         });
         setLocEdit(locMap);
 
@@ -318,14 +322,15 @@ export const AdminPricingConfigManager: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-2">
-                {addon.variants.map((v: any) => {
-                  const key = `${addon.slug}:${v.variantSlug}`;
+                {(addon.variants || addon.activePrices || []).map((v: any) => {
+                  const vSlug = v.variantSlug || v.slug;
+                  const key = `${addon.slug}:${vSlug}`;
                   const edit = addonEdit[key] || { price: 0, reason: '' };
                   const isSaving = savingId === key;
 
                   return (
                     <div
-                      key={v.variantSlug}
+                      key={vSlug}
                       className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                     >
                       <div className="sm:w-1/3">
