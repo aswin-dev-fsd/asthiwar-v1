@@ -5,11 +5,13 @@ import { CalculatorWizard } from './components/calculator/CalculatorWizard';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Sparkles } from 'lucide-react';
+import { adminLogout } from './services/adminApi';
 
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'calculator' | 'admin'>(() => {
     return window.location.pathname.startsWith('/admin') ? 'admin' : 'calculator';
   });
+  const [adminUser, setAdminUser] = useState<any | null>(null);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -28,9 +30,23 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleAdminLogout = async () => {
+    try {
+      await adminLogout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    setAdminUser(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950">
-      <Header currentView={currentView} onNavigate={navigateTo} />
+      <Header
+        currentView={currentView}
+        onNavigate={navigateTo}
+        adminUser={adminUser}
+        onLogout={handleAdminLogout}
+      />
 
       <main className="flex-grow">
         <ErrorBoundary fallbackTitle="Application View Error">
@@ -57,7 +73,11 @@ export const App: React.FC = () => {
               <CalculatorWizard />
             </div>
           ) : (
-            <AdminPortal onBackToCalculator={() => navigateTo('calculator')} />
+            <AdminPortal
+              user={adminUser}
+              onUserChange={setAdminUser}
+              onLogout={handleAdminLogout}
+            />
           )}
         </ErrorBoundary>
       </main>
