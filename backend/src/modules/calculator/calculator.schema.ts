@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-export const AreaUnitEnum = z.enum(['sqft', 'sqyards', 'cents']);
-export const FloorCountEnum = z.enum(['Ground', 'G+1', 'G+2', 'G+3']);
+export const AreaUnitEnum = z.enum(['sqft', 'sqyards', 'cents', 'sqm']);
+export const FloorCountEnum = z.number().int().min(0).max(10);
 export const PackageSlugEnum = z.enum(['basic', 'standard', 'premium', 'luxury']);
 
 export const customizationItemSchema = z.object({
@@ -23,7 +23,7 @@ export const calculateEstimateSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number cannot exceed 15 characters')
     .regex(/^[0-9+ -]+$/, 'Invalid phone number format'),
-  customerEmail: z.string().email('Invalid email address'),
+  customerEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   plotLocation: z.string().min(2, 'Plot location is required'),
   locationId: z.number().int().positive().optional(),
 
@@ -37,6 +37,8 @@ export const calculateEstimateSchema = z.object({
 
   // Floors
   floorCount: FloorCountEnum,
+  floorBreakdown: z.array(z.number()).optional(),
+  headRoomAreaSqft: z.number().min(0, 'Head room area cannot be negative').default(0),
 
   // Package Selection
   packageSlug: PackageSlugEnum,

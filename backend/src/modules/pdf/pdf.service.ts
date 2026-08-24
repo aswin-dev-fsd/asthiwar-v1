@@ -111,7 +111,7 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       doc.font('Helvetica').text(estimate.customerPhone, 125, infoCardY + 37);
 
       doc.font('Helvetica-Bold').text('Email Address: ', 50, infoCardY + 51);
-      doc.font('Helvetica').text(estimate.customerEmail, 125, infoCardY + 51);
+      doc.font('Helvetica').text(estimate.customerEmail ?? 'N/A', 125, infoCardY + 51);
 
       // Right Column: Project Technical Specs
       const col2X = 310;

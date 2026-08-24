@@ -181,7 +181,8 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
         optionPrices,
         and(
           eq(optionPrices.optionId, options.id),
-          eq(optionPrices.packageId, pkg.id)
+          eq(optionPrices.packageId, pkg.id),
+          isNull(optionPrices.effectiveTo)
         )
       );
 
@@ -236,7 +237,8 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
 
     const addonPriceRows = await db
       .select()
-      .from(addonPrices);
+      .from(addonPrices)
+      .where(isNull(addonPrices.effectiveTo));
 
     const addonsData = addonRows.map((ad) => {
       const variants = addonPriceRows

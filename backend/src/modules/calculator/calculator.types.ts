@@ -1,5 +1,5 @@
-export type AreaUnit = 'sqft' | 'sqyards' | 'cents';
-export type FloorCount = 'Ground' | 'G+1' | 'G+2' | 'G+3';
+export type AreaUnit = 'sqft' | 'sqyards' | 'cents' | 'sqm';
+export type FloorCount = number;
 export type PackageSlug = 'basic' | 'standard' | 'premium' | 'luxury';
 
 export interface CustomizationInput {
@@ -17,7 +17,7 @@ export interface CalculatorInput {
   // Step 0: Lead Info
   customerName: string;
   customerPhone: string;
-  customerEmail: string;
+  customerEmail?: string;
   plotLocation: string;
   locationId?: number;
 
@@ -31,6 +31,8 @@ export interface CalculatorInput {
 
   // Step 2: Floors
   floorCount: FloorCount;
+  floorBreakdown?: number[];
+  headRoomAreaSqft?: number;
 
   // Step 3: Package
   packageSlug: PackageSlug;

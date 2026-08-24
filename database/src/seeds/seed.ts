@@ -51,7 +51,9 @@ async function seedLocations() {
     { name: 'Tiruppur',   slug: 'tiruppur',   priceMultiplier: '0.9800', sortOrder: 3 },
     { name: 'Erode',      slug: 'erode',      priceMultiplier: '0.9800', sortOrder: 4 },
     { name: 'Chennai',    slug: 'chennai',    priceMultiplier: '1.0500', sortOrder: 5 },
-    { name: 'Other TN',   slug: 'other_tn',   priceMultiplier: '0.9600', sortOrder: 6 },
+    { name: 'Madurai',    slug: 'madurai',    priceMultiplier: '1.0000', sortOrder: 6 },
+    { name: 'Virudhunagar',slug: 'virudhunagar', priceMultiplier: '1.0000', sortOrder: 7 },
+    { name: 'Other TN',   slug: 'other_tn',   priceMultiplier: '0.9600', sortOrder: 8 },
   ];
 
   await db.insert(locations).values(data).onConflictDoNothing();

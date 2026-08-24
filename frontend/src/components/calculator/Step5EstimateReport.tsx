@@ -254,9 +254,12 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
 
       {/* Monthly EMI Estimator Slider */}
       <div className="asthiwar-card bg-slate-900/60 border-slate-800">
-        <div className="flex items-center gap-2 mb-4">
-          <Calculator className="w-5 h-5 text-amber-400" />
-          <h3 className="font-heading font-bold text-base text-white">Home Construction Loan EMI Estimator</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-5 h-5 text-amber-400" />
+            <h3 className="font-heading font-bold text-base text-white">Home Construction Loan EMI Estimator</h3>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 whitespace-nowrap">Assisting in Loan</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

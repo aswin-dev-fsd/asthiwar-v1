@@ -182,13 +182,18 @@ export interface EstimateFormState {
 
   // Step 1: Dimensions
   plotArea: number;
-  plotAreaUnit: 'sqft' | 'cents' | 'sqyards';
+  plotAreaUnit: 'sqft' | 'cents' | 'sqyards' | 'sqm';
   builtupAreaPerFloor: number;
   carParkingAreaSqft: number;
-  carCount: number;
+  
+  isVariableArea: boolean;
+  floorBreakdown: number[];
+  headRoomAreaSqft: number;
+  compoundWallPerimeter: number;
+  gateAreaSqft: number;
 
   // Step 2: Floors
-  floorCount: 'Ground' | 'G+1' | 'G+2' | 'G+3';
+  floorCount: number;
 
   // Step 3: Package
   packageSlug: 'basic' | 'standard' | 'premium' | 'luxury';

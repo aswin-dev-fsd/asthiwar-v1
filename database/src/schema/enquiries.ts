@@ -7,7 +7,7 @@ export const enquiries = pgTable('enquiries', {
   estimateNumber: text('estimate_number'),
   fullName: text('full_name').notNull(),
   phone: text('phone').notNull(),
-  email: text('email').notNull(),
+  email: text('email'),
   plotLocation: text('plot_location').notNull(),
   preferredContactTime: text('preferred_contact_time'),
   requirementNotes: text('requirement_notes'),

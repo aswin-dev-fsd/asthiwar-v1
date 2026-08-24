@@ -182,7 +182,7 @@ export async function updateLocationMultiplier(
   payload: { priceMultiplier: string; isActive?: boolean }
 ) {
   const res = await fetch(`${API_BASE}/config/locations/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });

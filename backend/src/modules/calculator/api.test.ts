@@ -116,7 +116,7 @@ async function runApiTests() {
       plotLocation: 'Coimbatore',
       plotArea: 1500,
       builtupAreaPerFloor: 1000,
-      floorCount: 'G+1',
+      floorCount: 1,
       packageSlug: 'standard',
     };
     const previewRes = await request('/api/v1/calculator/preview', {
@@ -138,7 +138,7 @@ async function runApiTests() {
       plotLocation: 'Chennai',
       plotArea: 2400,
       builtupAreaPerFloor: 1200,
-      floorCount: 'G+1',
+      floorCount: 1,
       carParkingAreaSqft: 200,
       packageSlug: 'premium',
       customizations: [
@@ -201,7 +201,7 @@ async function runApiTests() {
       plotLocation: '',
       plotArea: -500, // Negative area
       builtupAreaPerFloor: 0,
-      floorCount: 'InvalidFloor',
+      floorCount: -1,
       packageSlug: 'ultra-luxury', // Invalid package
     };
     const invalidRes = await request('/api/v1/calculator/estimate', {

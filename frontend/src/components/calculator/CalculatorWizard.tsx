@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   User,
   Ruler,
-  Building,
   Package as PackageIcon,
   Sliders,
   FileText,
@@ -12,7 +11,6 @@ import { Location, Package, EstimateFormState, CalculationResult } from '../../t
 import { getLocations, getPackages, createAuthoritativeEstimate } from '../../services/api';
 import { Step0LeadCapture } from './Step0LeadCapture';
 import { Step1Dimensions } from './Step1Dimensions';
-import { Step2Floors } from './Step2Floors';
 import { Step3Packages } from './Step3Packages';
 import { Step4Customizations } from './Step4Customizations';
 import { Step5EstimateReport } from './Step5EstimateReport';
@@ -26,20 +24,26 @@ const INITIAL_FORM_STATE: EstimateFormState = {
   plotAreaUnit: 'sqft',
   builtupAreaPerFloor: 1500,
   carParkingAreaSqft: 200,
-  carCount: 1,
-  floorCount: 'G+1',
+  
+  isVariableArea: false,
+  floorBreakdown: [1500],
+  headRoomAreaSqft: 0,
+  compoundWallPerimeter: 0,
+  gateAreaSqft: 0,
+
+  // Step 2: Floors
+  floorCount: 0,
   packageSlug: 'standard',
   customizations: [],
   addons: [],
 };
 
 const STEP_LABELS = [
-  { step: 0, label: 'Client', icon: User },
-  { step: 1, label: 'Dimensions', icon: Ruler },
-  { step: 2, label: 'Floors', icon: Building },
-  { step: 3, label: 'Package', icon: PackageIcon },
-  { step: 4, label: 'Customise', icon: Sliders },
-  { step: 5, label: 'Estimate', icon: FileText },
+  { step: 0, label: 'Dimensions', icon: Ruler },
+  { step: 1, label: 'Package', icon: PackageIcon },
+  { step: 2, label: 'Customise', icon: Sliders },
+  { step: 3, label: 'Details', icon: User },
+  { step: 4, label: 'Estimate', icon: FileText },
 ];
 
 export const CalculatorWizard: React.FC = () => {
@@ -106,10 +110,10 @@ export const CalculatorWizard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Stepper Progress Bar */}
-      {currentStep < 5 && (
+      {currentStep < 4 && (
         <div className="max-w-2xl mx-auto mb-10">
-          <div className="grid grid-cols-5 gap-2 text-center">
-            {STEP_LABELS.slice(0, 5).map((s) => {
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {STEP_LABELS.slice(0, 4).map((s) => {
               const Icon = s.icon;
               const isCompleted = currentStep > s.step;
               const isActive = currentStep === s.step;
@@ -143,7 +147,7 @@ export const CalculatorWizard: React.FC = () => {
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-3">
             <div
               className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 4) * 100}%` }}
+              style={{ width: `${(currentStep / 3) * 100}%` }}
             />
           </div>
         </div>
@@ -170,17 +174,18 @@ export const CalculatorWizard: React.FC = () => {
       ) : (
         <>
           {currentStep === 0 && (
-            <Step0LeadCapture
+            <Step1Dimensions
               formData={formData}
-              locations={locations}
               onChange={handleUpdateForm}
               onNext={() => setCurrentStep(1)}
+              onBack={() => {}}
             />
           )}
 
           {currentStep === 1 && (
-            <Step1Dimensions
+            <Step3Packages
               formData={formData}
+              packages={packages}
               onChange={handleUpdateForm}
               onNext={() => setCurrentStep(2)}
               onBack={() => setCurrentStep(0)}
@@ -188,7 +193,7 @@ export const CalculatorWizard: React.FC = () => {
           )}
 
           {currentStep === 2 && (
-            <Step2Floors
+            <Step4Customizations
               formData={formData}
               onChange={handleUpdateForm}
               onNext={() => setCurrentStep(3)}
@@ -197,25 +202,16 @@ export const CalculatorWizard: React.FC = () => {
           )}
 
           {currentStep === 3 && (
-            <Step3Packages
+            <Step0LeadCapture
               formData={formData}
-              packages={packages}
+              locations={locations}
               onChange={handleUpdateForm}
-              onNext={() => setCurrentStep(4)}
+              onNext={handleFinalCalculate}
               onBack={() => setCurrentStep(2)}
             />
           )}
 
-          {currentStep === 4 && (
-            <Step4Customizations
-              formData={formData}
-              onChange={handleUpdateForm}
-              onNext={handleFinalCalculate}
-              onBack={() => setCurrentStep(3)}
-            />
-          )}
-
-          {currentStep === 5 && estimateResult && (
+          {currentStep === 4 && estimateResult && (
             <Step5EstimateReport result={estimateResult} onReset={handleReset} />
           )}
         </>

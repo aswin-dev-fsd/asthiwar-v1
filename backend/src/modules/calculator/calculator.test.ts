@@ -61,7 +61,7 @@ async function runTests() {
       plotLocation: 'Coimbatore',
       plotArea: 1500,
       builtupAreaPerFloor: 1000,
-      floorCount: 'G+1',
+      floorCount: 1,
       packageSlug: 'standard',
     });
 
@@ -84,7 +84,7 @@ async function runTests() {
       plotLocation: 'Coimbatore',
       plotArea: 3000,
       builtupAreaPerFloor: 2000,
-      floorCount: 'G+1',
+      floorCount: 1,
       packageSlug: 'basic',
     });
 
@@ -105,7 +105,7 @@ async function runTests() {
       plotLocation: 'Chennai',
       plotArea: 1200,
       builtupAreaPerFloor: 1000,
-      floorCount: 'Ground',
+      floorCount: 0,
       packageSlug: 'standard',
     });
 
@@ -121,7 +121,7 @@ async function runTests() {
       plotLocation: 'Pollachi',
       plotArea: 1200,
       builtupAreaPerFloor: 1000,
-      floorCount: 'Ground',
+      floorCount: 0,
       packageSlug: 'standard',
     });
 
@@ -140,7 +140,7 @@ async function runTests() {
       plotLocation: 'Coimbatore',
       plotArea: 1500,
       builtupAreaPerFloor: 1000,
-      floorCount: 'G+1',
+      floorCount: 1,
       packageSlug: 'standard',
       customizations: [
         { itemSlug: 'masonry_work', optionSlug: 'red_brick' },
@@ -165,7 +165,7 @@ async function runTests() {
       plotLocation: 'Coimbatore',
       plotArea: 2000,
       builtupAreaPerFloor: 1500,
-      floorCount: 'G+1',
+      floorCount: 1,
       packageSlug: 'premium',
       addons: [
         { addonSlug: 'underground_sump', variantSlug: 'flyash', quantity: 5000 },
@@ -221,7 +221,7 @@ async function runTests() {
         plotArea: 2400,
         plotAreaUnit: 'sqft',
         builtupAreaPerFloor: 1200,
-        floorCount: 'G+2',
+        floorCount: 2,
         carParkingAreaSqft: 250,
         carCount: 1,
         packageSlug: 'premium',

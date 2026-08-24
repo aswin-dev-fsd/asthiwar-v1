@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Phone, Mail, MapPin, ArrowRight, Shield } from 'lucide-react';
+import { User, Phone, Mail, MapPin, ArrowRight, ArrowLeft, Shield } from 'lucide-react';
 import { Location, EstimateFormState } from '../../types';
 
 interface Step0Props {
@@ -7,6 +7,7 @@ interface Step0Props {
   locations: Location[];
   onChange: (fields: Partial<EstimateFormState>) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
 export const Step0LeadCapture: React.FC<Step0Props> = ({
@@ -14,11 +15,12 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
   locations,
   onChange,
   onNext,
+  onBack,
 }) => {
   const isValid =
     formData.customerName.trim().length >= 2 &&
     /^[6-9]\d{9}$/.test(formData.customerPhone.trim()) &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail.trim()) &&
+    (formData.customerEmail.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail.trim())) &&
     formData.plotLocation.trim().length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,12 +33,12 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
   return (
     <div className="max-w-xl mx-auto animate-fade-in">
       <div className="text-center mb-8">
-        <span className="badge badge-gold mb-3">Step 1 of 5 • Consultation Initiation</span>
+        <span className="badge badge-gold mb-3">Step 4 of 4 • Client Details</span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
-          Calculate Your Dream Home Construction Cost
+          Almost Done!
         </h2>
         <p className="text-sm text-slate-400">
-          Get an instant, 100% authoritative construction budget and 10-stage milestone schedule tailored for Tamil Nadu.
+          Enter your details to view your instant, 100% authoritative construction budget and milestone schedule.
         </p>
       </div>
 
@@ -78,11 +80,10 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
 
           <div className="form-group">
             <label className="form-label flex items-center gap-1.5">
-              <Mail className="w-4 h-4 text-amber-400" /> Email Address *
+              <Mail className="w-4 h-4 text-amber-400" /> Email Address (Optional)
             </label>
             <input
               type="email"
-              required
               placeholder="name@example.com"
               className="form-input"
               value={formData.customerEmail}
@@ -114,14 +115,19 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
           </select>
         </div>
 
-        <div className="pt-2">
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+          {onBack && (
+            <button type="button" onClick={onBack} className="btn btn-secondary text-xs">
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Back
+            </button>
+          )}
           <button
             type="submit"
             disabled={!isValid}
-            className="btn btn-primary w-full py-3.5 text-base"
+            className="btn btn-primary py-3 px-6 text-base"
           >
-            <span>Proceed to Dimensions</span>
-            <ArrowRight className="w-5 h-5" />
+            <span>View Estimate</span>
+            <ArrowRight className="w-5 h-5 ml-1.5" />
           </button>
         </div>
 

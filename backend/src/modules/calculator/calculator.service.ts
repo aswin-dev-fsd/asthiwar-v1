@@ -60,12 +60,23 @@ export const MILESTONE_DEFINITIONS = [
   { stageNumber: 10, stageName: 'Fixtures, Finishing & Handover', percentage: 5, keyDeliverables: 'CP & sanitary fittings, switches, lights, glass railings, deep clean' },
 ];
 
-export const DURATION_BY_FLOOR: Record<FloorCount, { range: string; min: number; max: number; floorNumber: number }> = {
-  'Ground': { range: '5–6 Months', min: 5, max: 6, floorNumber: 1 },
-  'G+1':    { range: '7–8 Months', min: 7, max: 8, floorNumber: 2 },
-  'G+2':    { range: '9–11 Months', min: 9, max: 11, floorNumber: 3 },
-  'G+3':    { range: '12–14 Months', min: 12, max: 14, floorNumber: 4 },
-};
+export function getDurationForFloors(floorsAboveGround: number) {
+  if (floorsAboveGround === 0) return { range: '5–6 Months', min: 5, max: 6, floorNumber: 1 };
+  if (floorsAboveGround === 1) return { range: '7–8 Months', min: 7, max: 8, floorNumber: 2 };
+  if (floorsAboveGround === 2) return { range: '9–11 Months', min: 9, max: 11, floorNumber: 3 };
+  if (floorsAboveGround === 3) return { range: '12–14 Months', min: 12, max: 14, floorNumber: 4 };
+
+  // For each floor beyond 3, add 2 months to min and max.
+  const extraFloors = floorsAboveGround - 3;
+  const min = 12 + (extraFloors * 2);
+  const max = 14 + (extraFloors * 2);
+  return {
+    range: `${min}–${max} Months`,
+    min,
+    max,
+    floorNumber: floorsAboveGround + 1,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Unit Conversion Helpers
@@ -77,6 +88,8 @@ export function convertAreaToSqft(area: number, unit: AreaUnit = 'sqft'): number
       return Number((area * 435.6).toFixed(2));
     case 'sqyards':
       return Number((area * 9).toFixed(2));
+    case 'sqm':
+      return Number((area * 10.7639).toFixed(2));
     case 'sqft':
     default:
       return Number(area.toFixed(2));
@@ -100,12 +113,17 @@ export async function calculateEstimate(
   // 1. Dimensions & Area Calculation
   const plotAreaSqft = convertAreaToSqft(input.plotArea, input.plotAreaUnit);
   const builtupPerFloorSqft = convertAreaToSqft(input.builtupAreaPerFloor, input.builtupAreaUnit);
-  const floorConfig = DURATION_BY_FLOOR[input.floorCount] ?? DURATION_BY_FLOOR['Ground'];
+  const floorConfig = getDurationForFloors(input.floorCount || 0);
   const numberOfFloors = floorConfig.floorNumber;
   const carParkingAreaSqft = Number((input.carParkingAreaSqft ?? 0).toFixed(2));
   const carCount = input.carCount ?? 1;
 
-  const totalBuiltupAreaSqft = Number(((builtupPerFloorSqft * numberOfFloors) + carParkingAreaSqft).toFixed(2));
+  let totalBuiltupAreaSqft = 0;
+  if (input.floorBreakdown && input.floorBreakdown.length > 0) {
+    totalBuiltupAreaSqft = input.floorBreakdown.reduce((sum, area) => sum + convertAreaToSqft(area, input.builtupAreaUnit), 0);
+  } else {
+    totalBuiltupAreaSqft = Number((builtupPerFloorSqft * numberOfFloors).toFixed(2));
+  }
 
   // 2. Fetch Package & Active Pricing
   const pkgRows = await db
@@ -115,6 +133,7 @@ export async function calculateEstimate(
       name: packages.name,
       tagline: packages.tagline,
       pricePerSqft: packagePrices.pricePerSqft,
+      headRoomPricePerSqft: packagePrices.headRoomPricePerSqft,
       volumeThreshold: packagePrices.volumeDiscountThresholdSqft,
       volumePricePerSqft: packagePrices.volumePricePerSqft,
     })
@@ -169,7 +188,11 @@ export async function calculateEstimate(
   }
 
   const effectiveRatePerSqft = Number((baseRatePerSqft * locationMultiplier).toFixed(2));
-  const baseConstructionCost = Math.round(totalBuiltupAreaSqft * effectiveRatePerSqft);
+  let baseConstructionCost = Math.round(totalBuiltupAreaSqft * effectiveRatePerSqft);
+
+  // Add Head Room Cost
+  const headRoomCost = Math.round((input.headRoomAreaSqft ?? 0) * Number(pkg.headRoomPricePerSqft));
+  baseConstructionCost += headRoomCost;
 
   // 4. Customizations & Upgrades Calculation
   const customizationDetails: CustomizationDetail[] = [];
@@ -204,7 +227,8 @@ export async function calculateEstimate(
         .where(
           and(
             eq(optionPrices.optionId, opt.id),
-            or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
+            or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId)),
+            isNull(optionPrices.effectiveTo)
           )
         )
         .limit(1);
@@ -280,7 +304,8 @@ export async function calculateEstimate(
         .where(
           and(
             eq(addonPrices.addonId, add.id),
-            eq(addonPrices.variantSlug, ad.variantSlug)
+            eq(addonPrices.variantSlug, ad.variantSlug),
+            isNull(addonPrices.effectiveTo)
           )
         );
 
@@ -357,7 +382,7 @@ export async function calculateEstimate(
     customer: {
       name: input.customerName,
       phone: input.customerPhone,
-      email: input.customerEmail,
+      email: input.customerEmail ?? '',
       location: input.plotLocation,
     },
     dimensions: {
@@ -410,15 +435,16 @@ export async function calculateEstimate(
         estimateNumber,
         customerName: input.customerName,
         customerPhone: input.customerPhone,
-        customerEmail: input.customerEmail,
+        customerEmail: input.customerEmail ?? '',
         plotLocation: input.plotLocation,
         locationId: resolvedLocationId,
         locationMultiplier: locationMultiplier.toFixed(4),
         plotAreaSqft: plotAreaSqft.toFixed(2),
         plotAreaUnit: input.plotAreaUnit ?? 'sqft',
         builtupAreaPerFloorSqft: builtupPerFloorSqft.toFixed(2),
-        floorCount: input.floorCount,
+        floorCount: input.floorCount === 0 ? 'Ground' : `G+${input.floorCount}`,
         floorMultiplier: numberOfFloors.toFixed(4),
+        floorBreakdownJson: input.floorBreakdown ?? null,
         carParkingAreaSqft: carParkingAreaSqft.toFixed(2),
         carCount,
         totalBuiltupAreaSqft: totalBuiltupAreaSqft.toFixed(2),

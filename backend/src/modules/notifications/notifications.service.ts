@@ -88,7 +88,7 @@ export async function sendEstimateQuotationNotification(estimateIdOrNumber: stri
       .values({
         estimateId: estimate.id,
         channel: 'EMAIL',
-        recipient: estimate.customerEmail,
+        recipient: estimate.customerEmail ?? '',
         template: 'ESTIMATE_QUOTATION',
         subject,
         payload: { html, customerName: estimate.customerName, estimateNumber: estimate.estimateNumber },
@@ -141,7 +141,7 @@ export async function sendAdminNewLeadAlert(enquiryId: string) {
   const adminPhone = process.env.ADMIN_ALERT_PHONE || '9876543210';
 
   const subject = `🚨 [NEW LEAD] Consultation Request: ${enquiry.fullName} (${enquiry.plotLocation})`;
-  const message = `🚨 *NEW ASTHIWAR LEAD ALERT*\n\n👤 *Client:* ${enquiry.fullName}\n📞 *Phone:* ${enquiry.phone}\n📧 *Email:* ${enquiry.email}\n📍 *Site Location:* ${enquiry.plotLocation}\n⏰ *Preferred Time:* ${enquiry.preferredContactTime || 'Anytime'}\n📝 *Requirement:* ${enquiry.requirementNotes || 'Standard consultation'}\n${enquiry.estimateNumber ? `📋 *Linked Estimate:* ${enquiry.estimateNumber}` : ''}`;
+  const message = `🚨 *NEW ASTHIWAR LEAD ALERT*\n\n👤 *Client:* ${enquiry.fullName}\n📞 *Phone:* ${enquiry.phone}\n📧 *Email:* ${enquiry.email ?? 'N/A'}\n📍 *Site Location:* ${enquiry.plotLocation}\n⏰ *Preferred Time:* ${enquiry.preferredContactTime || 'Anytime'}\n📝 *Requirement:* ${enquiry.requirementNotes || 'Standard consultation'}\n${enquiry.estimateNumber ? `📋 *Linked Estimate:* ${enquiry.estimateNumber}` : ''}`;
 
   // Log Admin Notification
   const [record] = await db

@@ -26,7 +26,19 @@ export const Step4Customizations: React.FC<Step4Props> = ({
 }) => {
   const [config, setConfig] = useState<PackageConfigResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'customizations' | 'addons'>('customizations');
+
+  // Auto-select package defaults when config loads
+  useEffect(() => {
+    if (config && formData.customizations.length === 0) {
+      const defaults = config.specifications.flatMap(cat => 
+        cat.items.filter(item => item.isCustomizable).map(item => {
+          const defaultOpt = item.options.find(o => o.isPackageDefault) || item.options[0];
+          return { itemSlug: item.slug, optionSlug: defaultOpt?.slug || '' };
+        }).filter(c => c.optionSlug)
+      );
+      onChange({ customizations: defaults });
+    }
+  }, [config, formData.customizations.length, onChange]);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,36 +115,13 @@ export const Step4Customizations: React.FC<Step4Props> = ({
         </p>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-slate-900 p-1 rounded-xl border border-slate-800 flex gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('customizations')}
-            className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'customizations'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Brand Customizations ({formData.customizations.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('addons')}
-            className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'addons'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            15 Add-Ons Catalog ({formData.addons.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Tab 1: Brand Customizations */}
-      {activeTab === 'customizations' && (
+      {/* Section 1: Brand Customizations */}
+      <div className="mb-8">
+        <h3 className="font-heading font-extrabold text-xl text-white mb-4 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center text-sm">1</span>
+          Brand Customizations
+        </h3>
+        
         <div className="space-y-4 mb-8">
           {customizableItems.length === 0 ? (
             <div className="asthiwar-card text-center py-8 text-slate-400">
@@ -140,15 +129,16 @@ export const Step4Customizations: React.FC<Step4Props> = ({
             </div>
           ) : (
             customizableItems.map((item: SpecificationItem) => {
+              const packageDefault = item.options.find(o => o.isPackageDefault) || item.options[0];
               const selectedOption =
                 formData.customizations.find((c) => c.itemSlug === item.slug)?.optionSlug ||
-                item.options[0]?.slug;
+                packageDefault?.slug;
 
               return (
                 <div key={item.id} className="asthiwar-card p-5">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-heading font-bold text-base text-white">{item.name}</h4>
-                    <span className="text-xs text-slate-400">Default: {item.options[0]?.brandName}</span>
+                    <span className="text-xs text-slate-400">Included: {packageDefault?.brandName}</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -169,7 +159,11 @@ export const Step4Customizations: React.FC<Step4Props> = ({
                             {isSelected && <Check className="w-3.5 h-3.5 text-amber-400" />}
                           </div>
                           <div className="text-[11px] font-semibold text-amber-400">
-                            {opt.priceDelta > 0 ? `+₹${opt.priceDelta}/sqft` : 'Included in Package'}
+                            {opt.priceDelta > 0 
+                              ? `+₹${opt.priceDelta}/sqft` 
+                              : opt.priceDelta < 0 
+                                ? `-₹${Math.abs(opt.priceDelta)}/sqft` 
+                                : 'Included'}
                           </div>
                         </div>
                       );
@@ -180,10 +174,15 @@ export const Step4Customizations: React.FC<Step4Props> = ({
             })
           )}
         </div>
-      )}
+      </div>
 
-      {/* Tab 2: 15 Add-Ons Catalog */}
-      {activeTab === 'addons' && (
+      {/* Section 2: 15 Add-Ons Catalog */}
+      <div>
+        <h3 className="font-heading font-extrabold text-xl text-white mb-4 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center text-sm">2</span>
+          15 Add-Ons Catalog
+        </h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {config?.addons.map((addon: AddonItem) => {
             const selectedVariant = formData.addons.find((a) => a.addonSlug === addon.slug);
@@ -241,24 +240,86 @@ export const Step4Customizations: React.FC<Step4Props> = ({
                     );
                   })}
 
-                  {/* Quantity Slider if applicable */}
-                  {isChecked && addon.pricingUnit === 'per_litre' && (
-                    <div className="pt-2">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">Capacity / Volume:</span>
-                        <span className="font-bold text-amber-400">
-                          {selectedVariant?.quantity || 5000} Litres
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={3000}
-                        max={15000}
-                        step={1000}
-                        value={selectedVariant?.quantity || 5000}
-                        onChange={(e) => updateAddonQty(addon.slug, parseInt(e.target.value, 10))}
-                        className="w-full"
-                      />
+                  {/* Quantity and Calculations for non-fixed addons */}
+                  {isChecked && (
+                    <div className="pt-3 mt-2 border-t border-slate-800/50 space-y-2">
+                      {addon.pricingUnit === 'per_litre' && (
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-400">Capacity / Volume:</span>
+                            <span className="font-bold text-amber-400">
+                              {(selectedVariant?.quantity || Number(addon.defaultQuantity || 5000)).toLocaleString()} Litres
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={Number(addon.minQuantity || 3000)}
+                            max={Number(addon.maxQuantity || 15000)}
+                            step={1000}
+                            value={selectedVariant?.quantity || Number(addon.defaultQuantity || 5000)}
+                            onChange={(e) => updateAddonQty(addon.slug, parseInt(e.target.value, 10))}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+
+                      {addon.pricingUnit === 'per_rft' && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-slate-400">Total Length (R.Ft):</span>
+                          <input
+                            type="number"
+                            min={Number(addon.minQuantity || 1)}
+                            max={Number(addon.maxQuantity || 999)}
+                            value={selectedVariant?.quantity || Number(addon.defaultQuantity || 1)}
+                            onChange={(e) => updateAddonQty(addon.slug, parseInt(e.target.value, 10) || 0)}
+                            className="form-input text-xs font-bold text-amber-400 w-24 text-right py-1 px-2 h-auto"
+                          />
+                        </div>
+                      )}
+
+                      {addon.pricingUnit === 'per_sqft_gate' && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-slate-400">Gate Area (Sq.Ft):</span>
+                          <input
+                            type="number"
+                            min={Number(addon.minQuantity || 1)}
+                            max={Number(addon.maxQuantity || 500)}
+                            value={selectedVariant?.quantity || Number(addon.defaultQuantity || 1)}
+                            onChange={(e) => updateAddonQty(addon.slug, parseInt(e.target.value, 10) || 0)}
+                            className="form-input text-xs font-bold text-amber-400 w-24 text-right py-1 px-2 h-auto"
+                          />
+                        </div>
+                      )}
+
+                      {addon.pricingUnit === 'per_sqft_terrace' && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-slate-400">Terrace Area (Sq.Ft):</span>
+                          <input
+                            type="number"
+                            min={Number(addon.minQuantity || 1)}
+                            max={Number(addon.maxQuantity || 10000)}
+                            value={selectedVariant?.quantity || Number(addon.defaultQuantity || 1)}
+                            onChange={(e) => updateAddonQty(addon.slug, parseInt(e.target.value, 10) || 0)}
+                            className="form-input text-xs font-bold text-amber-400 w-24 text-right py-1 px-2 h-auto"
+                          />
+                        </div>
+                      )}
+
+                      {/* Real-time Calculation Details */}
+                      {(() => {
+                        const activeVariant = addon.variants.find((v) => v.variantSlug === selectedVariant?.variantSlug);
+                        if (!activeVariant || addon.pricingUnit === 'fixed') return null;
+                        const qty = selectedVariant?.quantity || Number(addon.defaultQuantity || 1);
+                        const total = Math.round(activeVariant.price * qty);
+                        return (
+                          <div className="flex justify-between items-center bg-slate-950/40 p-2 rounded text-[11px] text-slate-400 mt-2">
+                            <span>Calculated Cost:</span>
+                            <span className="font-semibold text-white">
+                              {qty.toLocaleString()} × ₹{activeVariant.price.toLocaleString('en-IN')} = <span className="text-amber-400">₹{total.toLocaleString('en-IN')}</span>
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -266,7 +327,7 @@ export const Step4Customizations: React.FC<Step4Props> = ({
             );
           })}
         </div>
-      )}
+      </div>
 
       {/* Navigation Buttons */}
       <div className="flex items-center justify-between">
