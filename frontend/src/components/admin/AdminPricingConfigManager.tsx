@@ -4,6 +4,8 @@ import {
   Save,
   Loader2,
   CheckCircle2,
+  Plus,
+  X,
 } from 'lucide-react';
 import {
   getAdminPackageConfigs,
@@ -12,6 +14,7 @@ import {
   updateAddonVariantPrice,
   getAdminLocationConfigs,
   updateLocationMultiplier,
+  createAdminLocation,
 } from '../../services/adminApi';
 
 export const AdminPricingConfigManager: React.FC = () => {
@@ -29,6 +32,13 @@ export const AdminPricingConfigManager: React.FC = () => {
   const [addonEdit, setAddonEdit] = useState<Record<string, { price: number; reason: string }>>({});
   // Edit states for locations
   const [locEdit, setLocEdit] = useState<Record<number, string>>({});
+
+  // New location form state
+  const [showAddLocation, setShowAddLocation] = useState<boolean>(false);
+  const [newLocName, setNewLocName] = useState<string>('');
+  const [newLocSlug, setNewLocSlug] = useState<string>('');
+  const [newLocMultiplier, setNewLocMultiplier] = useState<string>('1.00');
+  const [isCreatingLoc, setIsCreatingLoc] = useState<boolean>(false);
 
   const fetchConfigs = () => {
     setLoading(true);
@@ -147,6 +157,38 @@ export const AdminPricingConfigManager: React.FC = () => {
     }
   };
 
+  const handleCreateLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLocName.trim()) {
+      alert('Please enter a city / location name.');
+      return;
+    }
+    const slug = (newLocSlug.trim() || newLocName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')).replace(/^_+|_+$/g, '');
+    const multiplier = parseFloat(newLocMultiplier) || 1.0;
+
+    setIsCreatingLoc(true);
+    try {
+      await createAdminLocation({
+        name: newLocName.trim(),
+        slug,
+        priceMultiplier: multiplier,
+        sortOrder: locations.length + 1,
+        isActive: true,
+      });
+      setSuccessMessage(`Location "${newLocName.trim()}" created successfully!`);
+      setNewLocName('');
+      setNewLocSlug('');
+      setNewLocMultiplier('1.00');
+      setShowAddLocation(false);
+      fetchConfigs();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to create location');
+    } finally {
+      setIsCreatingLoc(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-24 text-center">
@@ -211,7 +253,7 @@ export const AdminPricingConfigManager: React.FC = () => {
       {/* Tab 1: Package Pricing */}
       {activeTab === 'packages' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {packages.map((pkg) => {
+          {packages.map((pkg: any) => {
             const edit = pkgEdit[pkg.slug] || { std: 0, vol: 0, reason: '' };
             const isSaving = savingId === pkg.slug;
 
@@ -311,7 +353,7 @@ export const AdminPricingConfigManager: React.FC = () => {
       {/* Tab 2: 15 Add-Ons Pricing */}
       {activeTab === 'addons' && (
         <div className="space-y-4">
-          {addons.map((addon) => (
+          {addons.map((addon: any) => (
             <div key={addon.slug} className="asthiwar-card p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -387,50 +429,143 @@ export const AdminPricingConfigManager: React.FC = () => {
 
       {/* Tab 3: City Multipliers */}
       {activeTab === 'locations' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {locations.map((loc) => {
-            const multiplier = locEdit[loc.id] || loc.priceMultiplier;
-            const isSaving = savingId === loc.id;
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">
+              Configure cost multipliers per city/district across Tamil Nadu ({locations.length} locations).
+            </p>
+            <button
+              onClick={() => setShowAddLocation(!showAddLocation)}
+              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+            >
+              {showAddLocation ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-amber-400" />}
+              <span>{showAddLocation ? 'Cancel' : 'Add Location'}</span>
+            </button>
+          </div>
 
-            return (
-              <div key={loc.id} className="asthiwar-card p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-amber-400" />
-                    <h4 className="font-heading font-bold text-base text-white">{loc.name}</h4>
-                  </div>
-                  <span className="badge badge-gold">{multiplier}x Factor</span>
+          {showAddLocation && (
+            <form
+              onSubmit={handleCreateLocation}
+              className="asthiwar-card p-5 border-amber-500/40 bg-slate-900/90 shadow-lg space-y-4 animate-fade-in"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h4 className="font-heading font-bold text-sm text-white flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-amber-400" />
+                  <span>Add New Location / City Factor</span>
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="form-group">
+                  <label className="form-label text-[11px]">City / Location Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Salem"
+                    className="form-input text-xs"
+                    value={newLocName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewLocName(val);
+                      if (!newLocSlug || newLocSlug === newLocName.toLowerCase().replace(/[^a-z0-9]+/g, '_')) {
+                        setNewLocSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+                      }
+                    }}
+                  />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label text-[11px]">Price Multiplier</label>
+                  <label className="form-label text-[11px]">Slug (Unique Identifier) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. salem"
+                    className="form-input text-xs"
+                    value={newLocSlug}
+                    onChange={(e) => setNewLocSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]+/g, ''))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label text-[11px]">Price Multiplier (0.50 - 2.00) *</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0.5"
                     max="2.0"
+                    required
                     className="form-input text-xs font-bold text-amber-400"
-                    value={multiplier}
-                    onChange={(e) =>
-                      setLocEdit({
-                        ...locEdit,
-                        [loc.id]: e.target.value,
-                      })
-                    }
+                    value={newLocMultiplier}
+                    onChange={(e) => setNewLocMultiplier(e.target.value)}
                   />
                 </div>
+              </div>
 
+              <div className="flex justify-end gap-3 pt-2">
                 <button
-                  onClick={() => handleSaveLocation(loc.id, loc.name)}
-                  disabled={isSaving}
-                  className="btn btn-primary w-full text-xs py-2"
+                  type="button"
+                  onClick={() => setShowAddLocation(false)}
+                  className="btn btn-secondary text-xs py-2 px-4"
                 >
-                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>Save Multiplier</span>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingLoc}
+                  className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
+                >
+                  {isCreatingLoc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Create Location</span>
                 </button>
               </div>
-            );
-          })}
+            </form>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {locations.map((loc: any) => {
+              const multiplier = locEdit[loc.id] || loc.priceMultiplier;
+              const isSaving = savingId === loc.id;
+
+              return (
+                <div key={loc.id} className="asthiwar-card p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-amber-400" />
+                      <h4 className="font-heading font-bold text-base text-white">{loc.name}</h4>
+                    </div>
+                    <span className="badge badge-gold">{multiplier}x Factor</span>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label text-[11px]">Price Multiplier</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.5"
+                      max="2.0"
+                      className="form-input text-xs font-bold text-amber-400"
+                      value={multiplier}
+                      onChange={(e) =>
+                        setLocEdit({
+                          ...locEdit,
+                          [loc.id]: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => handleSaveLocation(loc.id, loc.name)}
+                    disabled={isSaving}
+                    className="btn btn-primary w-full text-xs py-2"
+                  >
+                    {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>Save Multiplier</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -177,6 +177,21 @@ export async function getAdminLocationConfigs() {
   return handleAdminResponse<any[]>(res);
 }
 
+export async function createAdminLocation(payload: {
+  name: string;
+  slug: string;
+  priceMultiplier: number | string;
+  sortOrder?: number;
+  isActive?: boolean;
+}) {
+  const res = await fetch(`${API_BASE}/config/locations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleAdminResponse(res);
+}
+
 export async function updateLocationMultiplier(
   id: number,
   payload: { priceMultiplier: string; isActive?: boolean }
