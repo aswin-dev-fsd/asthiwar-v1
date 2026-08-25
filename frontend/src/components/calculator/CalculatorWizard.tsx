@@ -62,7 +62,7 @@ export const CalculatorWizard: React.FC = () => {
         setLocations(locs);
         setPackages(pkgs);
         if (locs.length > 0) {
-          setFormData((prev) => ({ ...prev, plotLocation: locs[0].name }));
+          setFormData((prev) => ({ ...prev, plotLocation: locs[0].name, locationId: locs[0].id }));
         }
         setLoading(false);
       })
@@ -73,9 +73,9 @@ export const CalculatorWizard: React.FC = () => {
       });
   }, []);
 
-  const handleUpdateForm = (fields: Partial<EstimateFormState>) => {
+  const handleUpdateForm = React.useCallback((fields: Partial<EstimateFormState>) => {
     setFormData((prev) => ({ ...prev, ...fields }));
-  };
+  }, []);
 
   const handleFinalCalculate = async () => {
     setCalculating(true);
@@ -147,7 +147,7 @@ export const CalculatorWizard: React.FC = () => {
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-3">
             <div
               className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
+              style={{ width: `${((currentStep + 1) / 4) * 100}%` }}
             />
           </div>
         </div>

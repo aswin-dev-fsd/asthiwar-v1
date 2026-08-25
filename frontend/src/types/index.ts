@@ -179,6 +179,7 @@ export interface EstimateFormState {
   customerPhone: string;
   customerEmail: string;
   plotLocation: string;
+  locationId?: number | null;
 
   // Step 1: Dimensions
   plotArea: number;

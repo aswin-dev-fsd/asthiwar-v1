@@ -104,7 +104,13 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
           <select
             className="form-select"
             value={formData.plotLocation}
-            onChange={(e) => onChange({ plotLocation: e.target.value })}
+            onChange={(e) => {
+              const loc = locations.find((l) => l.name === e.target.value);
+              onChange({
+                plotLocation: e.target.value,
+                locationId: loc ? loc.id : null,
+              });
+            }}
           >
             <option value="">Select your site location...</option>
             {locations.map((loc) => (

@@ -43,13 +43,15 @@ export async function getAdminPackages() {
   });
 }
 
-export async function updateAdminPackagePrice(packageId: number, dto: UpdatePackagePriceDto) {
+export async function updateAdminPackagePrice(packageIdOrSlug: number | string, dto: UpdatePackagePriceDto) {
   const pkg = await db.query.packages.findFirst({
-    where: eq(schema.packages.id, packageId),
+    where: typeof packageIdOrSlug === 'number' || !isNaN(Number(packageIdOrSlug))
+      ? eq(schema.packages.id, Number(packageIdOrSlug))
+      : eq(schema.packages.slug, String(packageIdOrSlug)),
   });
 
   if (!pkg) {
-    throw new AdminServiceError(404, 'PACKAGE_NOT_FOUND', `Package with ID ${packageId} not found`);
+    throw new AdminServiceError(404, 'PACKAGE_NOT_FOUND', `Package '${packageIdOrSlug}' not found`);
   }
 
   const [newPrice] = await db
@@ -60,7 +62,7 @@ export async function updateAdminPackagePrice(packageId: number, dto: UpdatePack
       volumeDiscountThresholdSqft: dto.volumeDiscountThresholdSqft,
       ...(dto.headRoomPricePerSqft !== undefined && { headRoomPricePerSqft: dto.headRoomPricePerSqft.toFixed(2) }),
     })
-    .where(eq(schema.packagePrices.packageId, packageId))
+    .where(eq(schema.packagePrices.packageId, pkg.id))
     .returning();
 
   return newPrice;
@@ -174,13 +176,15 @@ export async function getAdminAddons() {
   });
 }
 
-export async function updateAdminAddonPrice(addonId: number, dto: UpdateAddonPriceDto) {
+export async function updateAdminAddonPrice(addonIdOrSlug: number | string, dto: UpdateAddonPriceDto) {
   const addon = await db.query.addons.findFirst({
-    where: eq(schema.addons.id, addonId),
+    where: typeof addonIdOrSlug === 'number' || !isNaN(Number(addonIdOrSlug))
+      ? eq(schema.addons.id, Number(addonIdOrSlug))
+      : eq(schema.addons.slug, String(addonIdOrSlug)),
   });
 
   if (!addon) {
-    throw new AdminServiceError(404, 'ADDON_NOT_FOUND', `Addon with ID ${addonId} not found`);
+    throw new AdminServiceError(404, 'ADDON_NOT_FOUND', `Addon '${addonIdOrSlug}' not found`);
   }
 
   // Update in-place!
@@ -191,7 +195,7 @@ export async function updateAdminAddonPrice(addonId: number, dto: UpdateAddonPri
     })
     .where(
       and(
-        eq(schema.addonPrices.addonId, addonId),
+        eq(schema.addonPrices.addonId, addon.id),
         eq(schema.addonPrices.variantSlug, dto.variantSlug)
       )
     )

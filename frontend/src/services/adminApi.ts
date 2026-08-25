@@ -1,5 +1,12 @@
 const API_BASE = '/api/v1/admin';
 
+async function adminFetch(url: string, options: RequestInit = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: 'include',
+  });
+}
+
 async function handleAdminResponse<T>(res: Response): Promise<T> {
   const json = await res.json();
   if (!res.ok || !json.success) {
@@ -13,7 +20,7 @@ async function handleAdminResponse<T>(res: Response): Promise<T> {
 // AUTHENTICATION
 // ----------------------------------------------------
 export async function adminLogin(payload: { email: string; password: string }) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await adminFetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -25,17 +32,15 @@ export async function adminLogin(payload: { email: string; password: string }) {
 }
 
 export async function adminGetMe() {
-  const res = await fetch(`${API_BASE}/auth/me`);
-  return handleAdminResponse<{
-    id: string;
-    email: string;
-    fullName: string;
-    role: string;
+  const res = await adminFetch(`${API_BASE}/auth/me`);
+  const data = await handleAdminResponse<{
+    user: { id: string; email: string; fullName: string; role: string };
   }>(res);
+  return data.user;
 }
 
 export async function adminLogout() {
-  const res = await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+  const res = await adminFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
   return handleAdminResponse<{ message: string }>(res);
 }
 
@@ -43,9 +48,16 @@ export async function adminLogout() {
 // DASHBOARD ANALYTICS
 // ----------------------------------------------------
 export async function getDashboardAnalytics() {
-  const res = await fetch(`${API_BASE}/analytics/dashboard`);
+  const res = await adminFetch(`${API_BASE}/analytics/dashboard`);
   return handleAdminResponse<{
-    metrics: {
+    kpis?: {
+      totalEstimates: number;
+      totalEnquiries: number;
+      newEnquiriesCount: number;
+      totalPipelineValue: number;
+      avgProjectValue: number;
+    };
+    metrics?: {
       totalEstimates: number;
       totalEnquiries: number;
       newEnquiriesCount: number;
@@ -63,16 +75,20 @@ export async function getDashboardAnalytics() {
 export async function getAdminEnquiries(params: {
   status?: string;
   search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }) {
   const query = new URLSearchParams();
   if (params.status) query.set('status', params.status);
   if (params.search) query.set('search', params.search);
+  if (params.sortBy) query.set('sortBy', params.sortBy);
+  if (params.sortOrder) query.set('sortOrder', params.sortOrder);
   if (params.page) query.set('page', params.page.toString());
   if (params.limit) query.set('limit', params.limit.toString());
 
-  const res = await fetch(`${API_BASE}/enquiries?${query.toString()}`);
+  const res = await adminFetch(`${API_BASE}/enquiries?${query.toString()}`);
   const json = await res.json();
   if (!res.ok || !json.success) throw new Error(json?.error?.message || 'Failed to fetch enquiries');
   return { items: json.data, pagination: json.pagination };
@@ -83,7 +99,7 @@ export async function updateAdminEnquiry(id: string, payload: {
   priority?: string;
   internalNotes?: string;
 }) {
-  const res = await fetch(`${API_BASE}/enquiries/${id}`, {
+  const res = await adminFetch(`${API_BASE}/enquiries/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -92,7 +108,7 @@ export async function updateAdminEnquiry(id: string, payload: {
 }
 
 export async function triggerLeadAlert(enquiryId: string) {
-  const res = await fetch(`${API_BASE}/enquiries/${enquiryId}/notify`, {
+  const res = await adminFetch(`${API_BASE}/enquiries/${enquiryId}/notify`, {
     method: 'POST',
   });
   return handleAdminResponse(res);
@@ -104,28 +120,32 @@ export async function triggerLeadAlert(enquiryId: string) {
 export async function getAdminEstimates(params: {
   packageSlug?: string;
   search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }) {
   const query = new URLSearchParams();
   if (params.packageSlug) query.set('packageSlug', params.packageSlug);
   if (params.search) query.set('search', params.search);
+  if (params.sortBy) query.set('sortBy', params.sortBy);
+  if (params.sortOrder) query.set('sortOrder', params.sortOrder);
   if (params.page) query.set('page', params.page.toString());
   if (params.limit) query.set('limit', params.limit.toString());
 
-  const res = await fetch(`${API_BASE}/estimates?${query.toString()}`);
+  const res = await adminFetch(`${API_BASE}/estimates?${query.toString()}`);
   const json = await res.json();
   if (!res.ok || !json.success) throw new Error(json?.error?.message || 'Failed to fetch estimates');
   return { items: json.data, pagination: json.pagination };
 }
 
 export async function getAdminEstimateById(id: string) {
-  const res = await fetch(`${API_BASE}/estimates/${id}`);
+  const res = await adminFetch(`${API_BASE}/estimates/${id}`);
   return handleAdminResponse(res);
 }
 
 export async function triggerEstimateQuotation(estimateId: string, channels: string[] = ['EMAIL', 'WHATSAPP']) {
-  const res = await fetch(`${API_BASE}/estimates/${estimateId}/notify`, {
+  const res = await adminFetch(`${API_BASE}/estimates/${estimateId}/notify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ channels }),
@@ -137,43 +157,57 @@ export async function triggerEstimateQuotation(estimateId: string, channels: str
 // PRICING & MATRIX CONFIGURATION
 // ----------------------------------------------------
 export async function getAdminPackageConfigs() {
-  const res = await fetch(`${API_BASE}/config/packages`);
+  const res = await adminFetch(`${API_BASE}/config/packages`);
   return handleAdminResponse<any[]>(res);
 }
 
-export async function updatePackagePrices(packageSlug: string, payload: {
-  standardPricePerSqft: number;
-  volumePricePerSqft: number;
-  changeReason: string;
+export async function updatePackagePrices(packageIdOrSlug: number | string, payload: {
+  pricePerSqft?: number;
+  standardPricePerSqft?: number;
+  volumePricePerSqft?: number;
+  volumeDiscountThresholdSqft?: number;
+  changeReason?: string;
 }) {
-  const res = await fetch(`${API_BASE}/config/packages/${packageSlug}/prices`, {
+  const stdPrice = payload.standardPricePerSqft ?? payload.pricePerSqft ?? 0;
+  const volPrice = payload.volumePricePerSqft ?? 0;
+  const res = await adminFetch(`${API_BASE}/config/packages/${packageIdOrSlug}/price`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      pricePerSqft: stdPrice,
+      volumePricePerSqft: volPrice,
+      volumeDiscountThresholdSqft: payload.volumeDiscountThresholdSqft ?? 3500,
+      changeReason: payload.changeReason,
+    }),
   });
   return handleAdminResponse(res);
 }
 
 export async function getAdminAddonConfigs() {
-  const res = await fetch(`${API_BASE}/config/addons`);
+  const res = await adminFetch(`${API_BASE}/config/addons`);
   return handleAdminResponse<any[]>(res);
 }
 
 export async function updateAddonVariantPrice(
-  addonSlug: string,
+  addonIdOrSlug: number | string,
   variantSlug: string,
-  payload: { price: number; changeReason: string }
+  payload: { price: number; changeReason?: string; packageTier?: string }
 ) {
-  const res = await fetch(`${API_BASE}/config/addons/${addonSlug}/variants/${variantSlug}/price`, {
+  const res = await adminFetch(`${API_BASE}/config/addons/${addonIdOrSlug}/price`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      variantSlug,
+      packageTier: payload.packageTier || 'all',
+      price: payload.price,
+      changeReason: payload.changeReason,
+    }),
   });
   return handleAdminResponse(res);
 }
 
 export async function getAdminLocationConfigs() {
-  const res = await fetch(`${API_BASE}/config/locations`);
+  const res = await adminFetch(`${API_BASE}/config/locations`);
   return handleAdminResponse<any[]>(res);
 }
 
@@ -184,7 +218,7 @@ export async function createAdminLocation(payload: {
   sortOrder?: number;
   isActive?: boolean;
 }) {
-  const res = await fetch(`${API_BASE}/config/locations`, {
+  const res = await adminFetch(`${API_BASE}/config/locations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -194,9 +228,9 @@ export async function createAdminLocation(payload: {
 
 export async function updateLocationMultiplier(
   id: number,
-  payload: { priceMultiplier: string; isActive?: boolean }
+  payload: { priceMultiplier: string | number; isActive?: boolean }
 ) {
-  const res = await fetch(`${API_BASE}/config/locations/${id}`, {
+  const res = await adminFetch(`${API_BASE}/config/locations/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

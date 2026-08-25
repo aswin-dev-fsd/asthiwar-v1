@@ -54,7 +54,6 @@ export const Step3Packages: React.FC<Step3Props> = ({
   // Calculate total builtup area to determine volume rate
   const multiplier = (formData.floorCount || 0) + 1;
   const totalBuiltup = (formData.builtupAreaPerFloor * multiplier) + formData.carParkingAreaSqft;
-  const isVolume = totalBuiltup > 3500;
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in" id="packages-overview">
@@ -71,9 +70,11 @@ export const Step3Packages: React.FC<Step3Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {packages.map((pkg) => {
           const isSelected = formData.packageSlug === pkg.slug;
+          const threshold = pkg.volumeDiscountThresholdSqft ?? (pkg as any).pricing?.volumeDiscountThresholdSqft ?? 3500;
+          const isVolumeForPkg = totalBuiltup > threshold;
           const stdRate = Number(pkg.standardPricePerSqft ?? (pkg as any).pricing?.standardRatePerSqft ?? 0);
           const volRate = Number(pkg.volumePricePerSqft ?? (pkg as any).pricing?.volumeRatePerSqft ?? stdRate);
-          const rate = isVolume ? volRate : stdRate;
+          const rate = isVolumeForPkg ? volRate : stdRate;
           const highlights = PACKAGE_HIGHLIGHTS[pkg.slug] || [];
           const isPopular = pkg.slug === 'premium';
 
@@ -116,9 +117,9 @@ export const Step3Packages: React.FC<Step3Props> = ({
                     </span>
                     <span className="text-[11px] text-slate-400">/ sq.ft</span>
                   </div>
-                  {isVolume && (
+                  {isVolumeForPkg && (
                     <div className="text-[10px] text-emerald-400 font-semibold mt-1">
-                      Volume Discount Applied (&gt;3,500 sqft)
+                      Volume Discount Applied (&gt;{threshold.toLocaleString('en-IN')} sqft)
                     </div>
                   )}
                 </div>

@@ -36,6 +36,13 @@
       "when": 1787671589476,
       "tag": "0004_petite_ironclad",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787674870000,
+      "tag": "0005_rename_floor_multiplier",
+      "breakpoints": true
     }
   ]
 }

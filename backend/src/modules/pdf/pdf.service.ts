@@ -159,10 +159,22 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
 
       doc.y = pkgRowY + 30;
 
+      // Helper for dynamic page breaks
+      const checkPageBreak = (neededHeight: number = 40) => {
+        if (doc.y + neededHeight > doc.page.height - 50) {
+          doc.addPage();
+          doc.rect(0, 0, doc.page.width, 30).fill(NAVY_HEADER);
+          doc.fillColor('#F59E0B').font('Helvetica-Bold').fontSize(9);
+          doc.text(`ASTHIWAR • Quotation ${estimate.estimateNumber} (Continued)`, 36, 10);
+          doc.y = 42;
+        }
+      };
+
       // ----------------------------------------------------
       // SECTION 2: BRAND CUSTOMIZATIONS / UPGRADES (If any)
       // ----------------------------------------------------
       if (items.length > 0) {
+        checkPageBreak(40);
         doc.fillColor(PRIMARY).font('Helvetica-Bold').fontSize(10.5).text(`${sectionNum++}. BRAND CUSTOMIZATIONS & SPECIFICATION UPGRADES`, 36, doc.y);
         doc.y += 5;
 
@@ -176,6 +188,13 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
 
         let curY = custTableY + 18;
         items.forEach((item, idx) => {
+          if (curY + 20 > doc.page.height - 50) {
+            doc.addPage();
+            doc.rect(0, 0, doc.page.width, 30).fill(NAVY_HEADER);
+            doc.fillColor('#F59E0B').font('Helvetica-Bold').fontSize(9);
+            doc.text(`ASTHIWAR • Quotation ${estimate.estimateNumber} (Continued)`, 36, 10);
+            curY = 42;
+          }
           const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
           doc.rect(tblX, curY, tblW, 18).fill(rowBg).strokeColor(BORDER_COLOR).stroke();
           doc.fillColor(DARK).font('Helvetica').fontSize(7.5);
@@ -193,6 +212,7 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       // SECTION 3: SELECTED INFRASTRUCTURE ADD-ONS (If any)
       // ----------------------------------------------------
       if (addons.length > 0) {
+        checkPageBreak(40);
         doc.fillColor(PRIMARY).font('Helvetica-Bold').fontSize(10.5).text(`${sectionNum++}. SELECTED ADD-ONS & INFRASTRUCTURE`, 36, doc.y);
         doc.y += 5;
 
@@ -206,6 +226,13 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
 
         let curY = addonTableY + 18;
         addons.forEach((addon, idx) => {
+          if (curY + 20 > doc.page.height - 50) {
+            doc.addPage();
+            doc.rect(0, 0, doc.page.width, 30).fill(NAVY_HEADER);
+            doc.fillColor('#F59E0B').font('Helvetica-Bold').fontSize(9);
+            doc.text(`ASTHIWAR • Quotation ${estimate.estimateNumber} (Continued)`, 36, 10);
+            curY = 42;
+          }
           const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
           doc.rect(tblX, curY, tblW, 18).fill(rowBg).strokeColor(BORDER_COLOR).stroke();
           doc.fillColor(DARK).font('Helvetica').fontSize(7.5);
@@ -224,12 +251,14 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       // ----------------------------------------------------
       const sumBoxW = 260;
       const sumBoxX = doc.page.width - 36 - sumBoxW;
-      const sumBoxY = doc.y + 4;
       const hasUpgrades = parseFloat(estimate.upgradesCost) > 0;
       const hasAddons = parseFloat(estimate.addonsCost) > 0;
       let sumBoxH = 50;
       if (hasUpgrades) sumBoxH += 16;
       if (hasAddons) sumBoxH += 16;
+
+      checkPageBreak(sumBoxH + 20);
+      const sumBoxY = doc.y + 4;
 
       doc.roundedRect(sumBoxX, sumBoxY, sumBoxW, sumBoxH, 6)
         .strokeColor(BORDER_COLOR)
@@ -262,11 +291,11 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       doc.fillColor(ACCENT_GOLD).font('Helvetica-Bold').fontSize(11).text(formatINR(estimate.totalProjectCost), sumBoxX + sumBoxW - 130, currentSumY + 3, { align: 'right', width: 118 });
 
       // ====================================================
-      // PAGE 2: 10-STAGE MILESTONES & CIVIL CONTRACT TERMS
+      // NEXT PAGE: 10-STAGE MILESTONES & CIVIL CONTRACT TERMS
       // ====================================================
       doc.addPage();
 
-      // Page 2 Header
+      // Milestone Page Header
       doc.rect(0, 0, doc.page.width, 50).fill(NAVY_HEADER);
       doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(13).text('10-STAGE CIVIL MILESTONE PAYMENT SCHEDULE', 36, 18);
 
@@ -351,16 +380,17 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       doc.font('Helvetica').fontSize(7).fillColor(TEXT_MUTED).text('Signature / Acceptance Date: ___________________', doc.page.width - 190, sigY + 20);
 
       // ----------------------------------------------------
-      // EXACT 2-PAGE NUMBERING (No Overflow)
+      // DYNAMIC PAGE NUMBERING
       // ----------------------------------------------------
-      const totalPages = 2;
+      const pageRange = doc.bufferedPageRange();
+      const totalPages = pageRange.count;
       for (let i = 0; i < totalPages; i++) {
         doc.switchToPage(i);
         doc.font('Helvetica').fontSize(7).fillColor('#94A3B8');
         doc.text(
           `ASTHIWAR Quotation • ${estimate.estimateNumber} • Page ${i + 1} of ${totalPages}`,
           36,
-          815,
+          doc.page.height - 25,
           { align: 'center', width: doc.page.width - 72, lineBreak: false }
         );
       }

@@ -16,7 +16,15 @@ import {
   triggerLeadAlert,
 } from '../../services/adminApi';
 
-const STATUS_FILTERS = ['ALL', 'NEW', 'CONTACTED', 'IN_PROGRESS', 'CLOSED', 'ARCHIVED'];
+const STATUS_FILTERS = [
+  { label: 'ALL', value: 'ALL' },
+  { label: 'NEW', value: 'NEW' },
+  { label: 'CONTACTED', value: 'CONTACTED' },
+  { label: 'MEETING SCHEDULED', value: 'MEETING_SCHEDULED' },
+  { label: 'QUOTATION SENT', value: 'QUOTATION_SENT' },
+  { label: 'WON', value: 'CLOSED_WON' },
+  { label: 'LOST', value: 'CLOSED_LOST' },
+];
 
 export const AdminEnquiriesManager: React.FC = () => {
   const [enquiries, setEnquiries] = useState<any[]>([]);
@@ -104,15 +112,15 @@ export const AdminEnquiriesManager: React.FC = () => {
       <div className="flex flex-wrap gap-2">
         {STATUS_FILTERS.map((st) => (
           <button
-            key={st}
-            onClick={() => setStatusFilter(st)}
+            key={st.value}
+            onClick={() => setStatusFilter(st.value)}
             className={`text-xs px-3.5 py-1.5 rounded-lg border font-semibold transition-all ${
-              statusFilter === st
+              statusFilter === st.value
                 ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-md shadow-amber-500/20'
                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
             }`}
           >
-            {st}
+            {st.label}
           </button>
         ))}
       </div>
@@ -191,9 +199,10 @@ export const AdminEnquiriesManager: React.FC = () => {
                       >
                         <option value="NEW">NEW</option>
                         <option value="CONTACTED">CONTACTED</option>
-                        <option value="IN_PROGRESS">IN PROGRESS</option>
-                        <option value="CLOSED">CLOSED</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
+                        <option value="MEETING_SCHEDULED">MEETING SCHEDULED</option>
+                        <option value="QUOTATION_SENT">QUOTATION SENT</option>
+                        <option value="CLOSED_WON">CLOSED WON</option>
+                        <option value="CLOSED_LOST">CLOSED LOST</option>
                       </select>
                     </td>
 

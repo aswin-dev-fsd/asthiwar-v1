@@ -21,7 +21,7 @@ export const estimates = pgTable('estimates', {
   plotAreaUnit: text('plot_area_unit').default('sqft').notNull(),
   builtupAreaPerFloorSqft: numeric('builtup_area_per_floor_sqft', { precision: 10, scale: 2 }).notNull(),
   floorCount: text('floor_count').notNull(), // 'Ground', 'G+1', 'G+2', 'G+3'
-  floorMultiplier: numeric('floor_multiplier', { precision: 6, scale: 4 }).default('1.0000').notNull(),
+  numberOfFloors: integer('number_of_floors').default(1).notNull(),
   floorBreakdownJson: jsonb('floor_breakdown_json'),
   carParkingAreaSqft: numeric('car_parking_area_sqft', { precision: 10, scale: 2 }).default('0.00').notNull(),
   carCount: integer('car_count').default(1).notNull(),

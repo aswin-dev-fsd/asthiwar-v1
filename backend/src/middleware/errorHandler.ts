@@ -45,7 +45,7 @@ export function errorHandler(
     httpMethod: req.method,
     statusCode,
     errorMessage: message,
-    errorStack: err.stack,
+    errorStack: env.NODE_ENV === 'production' ? undefined : err.stack,
     metadata: {
       errorCode: code,
       body: req.body,

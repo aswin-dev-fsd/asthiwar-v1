@@ -1,4 +1,4 @@
-import { db, auditLogs, desc, eq, and, gte, lte } from '@asthiwar/database';
+import { db, auditLogs, desc, eq, and, gte, lte, sql } from '@asthiwar/database';
 
 export interface LogAuditParams {
   eventType: 'ERROR' | 'WARN' | 'INFO' | 'ADMIN_MUTATION' | 'CALCULATOR_SUBMISSION' | 'NOTIFICATION_DISPATCH';
@@ -117,6 +117,14 @@ export async function queryAuditLogs(filters: AuditLogQueryFilters = {}) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  const totalCountResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(auditLogs)
+    .where(whereClause);
+
+  const total = Number(totalCountResult[0]?.count || 0);
+  const totalPages = Math.ceil(total / limit);
+
   const logs = await db
     .select()
     .from(auditLogs)
@@ -129,5 +137,7 @@ export async function queryAuditLogs(filters: AuditLogQueryFilters = {}) {
     items: logs,
     page,
     limit,
+    total,
+    totalPages,
   };
 }

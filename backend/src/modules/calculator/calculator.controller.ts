@@ -16,6 +16,7 @@ import {
   and,
   asc,
   isNull,
+  or,
 } from '@asthiwar/database';
 import { calculateEstimate } from './calculator.service.js';
 import { CalculatorInput } from './calculator.types.js';
@@ -161,7 +162,7 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
       )
       .orderBy(asc(items.sortOrder));
 
-    // Fetch options for customizable items
+    // Fetch options for customizable items (including universal prices)
     const optRows = await db
       .select({
         id: options.id,
@@ -172,22 +173,33 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
         isDefault: options.isDefault,
         priceDelta: optionPrices.priceDelta,
         priceType: optionPrices.priceType,
+        packageId: optionPrices.packageId,
       })
       .from(options)
       .leftJoin(
         optionPrices,
         and(
           eq(optionPrices.optionId, options.id),
-          eq(optionPrices.packageId, pkg.id)
+          or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
         )
       );
+
+    // Prioritize package-specific option price over universal price
+    const optionPricePriorityMap = new Map<number, typeof optRows[0]>();
+    for (const opt of optRows) {
+      const existing = optionPricePriorityMap.get(opt.id);
+      if (!existing || (opt.packageId !== null && existing.packageId === null)) {
+        optionPricePriorityMap.set(opt.id, opt);
+      }
+    }
+    const deduplicatedOptRows = Array.from(optionPricePriorityMap.values());
 
     // Group items under categories
     const categoriesMap = catRows.map((cat) => {
       const catItems = itemRows
         .filter((it) => it.categoryId === cat.id)
         .map((it) => {
-          const itemOptions = optRows
+          const itemOptions = deduplicatedOptRows
             .filter((opt) => opt.itemId === it.itemId)
             .map((opt) => ({
               id: opt.id,

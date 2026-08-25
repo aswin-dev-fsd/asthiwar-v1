@@ -383,7 +383,7 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
           <button
             type="button"
             onClick={onNext}
-            disabled={!formData.plotArea || isFootprintExceeded || totalBuiltupArea <= 0 || isNaN(formData.carParkingAreaSqft) || isNaN(formData.headRoomAreaSqft) || isNaN(formData.compoundWallPerimeter) || isNaN(formData.gateAreaSqft)}
+            disabled={!formData.plotArea || formData.plotArea <= 0 || isFootprintExceeded || totalBuiltupArea <= 0 || formData.carParkingAreaSqft < 0 || formData.headRoomAreaSqft < 0 || formData.compoundWallPerimeter < 0 || formData.gateAreaSqft < 0}
             className="btn btn-primary text-xs"
           >
             <span>Select Package</span>

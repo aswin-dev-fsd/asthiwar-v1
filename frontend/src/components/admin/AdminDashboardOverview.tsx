@@ -58,12 +58,13 @@ export const AdminDashboardOverview: React.FC = () => {
     );
   }
 
-  const metrics = data?.metrics || {
-    totalPipelineValue: 0,
-    totalEstimates: 0,
-    totalEnquiries: 0,
-    newEnquiriesCount: 0,
-    averageEstimateValue: 0,
+  const kpis = data?.kpis || data?.metrics || {};
+  const metrics = {
+    totalPipelineValue: kpis.totalPipelineValue || 0,
+    totalEstimates: kpis.totalEstimates || 0,
+    totalEnquiries: kpis.totalEnquiries || 0,
+    newEnquiriesCount: kpis.newEnquiriesCount || 0,
+    averageEstimateValue: kpis.avgProjectValue || kpis.averageEstimateValue || 0,
   };
   const recentEnquiries = data?.recentEnquiries || [];
   const estimatesByPackage = data?.estimatesByPackage || [];

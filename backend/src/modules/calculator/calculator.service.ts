@@ -17,6 +17,7 @@ import {
   sql,
   isNull,
   or,
+  inArray,
 } from '@asthiwar/database';
 import {
   AreaUnit,
@@ -124,6 +125,9 @@ export async function calculateEstimate(
   } else {
     totalBuiltupAreaSqft = Number((builtupPerFloorSqft * numberOfFloors).toFixed(2));
   }
+  if (carParkingAreaSqft > 0) {
+    totalBuiltupAreaSqft = Number((totalBuiltupAreaSqft + carParkingAreaSqft).toFixed(2));
+  }
 
   // 2. Fetch Package & Active Pricing
   const pkgRows = await db
@@ -194,65 +198,79 @@ export async function calculateEstimate(
   const headRoomCost = Math.round((input.headRoomAreaSqft ?? 0) * Number(pkg.headRoomPricePerSqft));
   baseConstructionCost += headRoomCost;
 
-  // 4. Customizations & Upgrades Calculation
+  // 4. Customizations & Upgrades Calculation (Batch-optimized for O(1) in-memory lookup)
   const customizationDetails: CustomizationDetail[] = [];
   let upgradesCost = 0;
 
   if (input.customizations && input.customizations.length > 0) {
-    for (const cust of input.customizations) {
-      // Find item
-      const itemRows = await db
-        .select()
-        .from(items)
-        .where(eq(items.slug, cust.itemSlug))
-        .limit(1);
+    const itemSlugs = input.customizations.map((c) => c.itemSlug);
+    const fetchedItems = await db
+      .select()
+      .from(items)
+      .where(inArray(items.slug, itemSlugs));
+    const itemMap = new Map(fetchedItems.map((itm) => [itm.slug, itm]));
+    const itemIds = fetchedItems.map((itm) => itm.id);
 
-      if (itemRows.length === 0) continue;
-      const itm = itemRows[0];
+    const fetchedOptions = itemIds.length > 0
+      ? await db
+          .select()
+          .from(options)
+          .where(inArray(options.itemId, itemIds))
+      : [];
+    const optionMap = new Map(fetchedOptions.map((opt) => [`${opt.itemId}:${opt.slug}`, opt]));
+    const optionIds = fetchedOptions.map((opt) => opt.id);
 
-      // Find option
-      const optRows = await db
-        .select()
-        .from(options)
-        .where(and(eq(options.itemId, itm.id), eq(options.slug, cust.optionSlug)))
-        .limit(1);
-
-      if (optRows.length === 0) continue;
-      const opt = optRows[0];
-
-      const priceRows = await db
-        .select()
-        .from(optionPrices)
-        .where(
-          and(
-            eq(optionPrices.optionId, opt.id),
-            or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
+    const fetchedPrices = optionIds.length > 0
+      ? await db
+          .select()
+          .from(optionPrices)
+          .where(
+            and(
+              inArray(optionPrices.optionId, optionIds),
+              or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
+            )
           )
-        )
-        .limit(1);
+      : [];
+    const priceMap = new Map<number, typeof fetchedPrices[0]>();
+    for (const p of fetchedPrices) {
+      const existing = priceMap.get(p.optionId);
+      if (!existing || (p.packageId !== null && existing.packageId === null)) {
+        priceMap.set(p.optionId, p);
+      }
+    }
 
+    const fetchedPackageItems = itemIds.length > 0
+      ? await db
+          .select()
+          .from(packageItems)
+          .where(and(eq(packageItems.packageId, pkg.id), inArray(packageItems.itemId, itemIds)))
+      : [];
+    const packageItemMap = new Map(fetchedPackageItems.map((pi) => [pi.itemId, pi]));
+
+    for (const cust of input.customizations) {
+      const itm = itemMap.get(cust.itemSlug);
+      if (!itm) continue;
+
+      const opt = optionMap.get(`${itm.id}:${cust.optionSlug}`);
+      if (!opt) continue;
+
+      const priceRow = priceMap.get(opt.id);
       let unitPriceDelta = 0;
       let priceType = 'per_sqft';
       let calculatedPrice = 0;
 
-      if (priceRows.length > 0) {
-        unitPriceDelta = Number(priceRows[0].priceDelta);
-        priceType = priceRows[0].priceType;
+      if (priceRow) {
+        unitPriceDelta = Number(priceRow.priceDelta);
+        priceType = priceRow.priceType;
         if (priceType === 'per_sqft') {
           calculatedPrice = Math.round(unitPriceDelta * totalBuiltupAreaSqft);
         } else {
           calculatedPrice = Math.round(unitPriceDelta);
         }
       } else {
-        // Check package item additional cost (e.g. Waterproofing in Basic)
-        const piRows = await db
-          .select()
-          .from(packageItems)
-          .where(and(eq(packageItems.packageId, pkg.id), eq(packageItems.itemId, itm.id)))
-          .limit(1);
-
-        if (piRows.length > 0 && !piRows[0].isIncluded && Number(piRows[0].additionalCostPrice) > 0) {
-          unitPriceDelta = Number(piRows[0].additionalCostPrice);
+        const pi = packageItemMap.get(itm.id);
+        if (pi && !pi.isIncluded && Number(pi.additionalCostPrice) > 0) {
+          unitPriceDelta = Number(pi.additionalCostPrice);
           priceType = 'per_sqft';
           calculatedPrice = Math.round(unitPriceDelta * totalBuiltupAreaSqft);
         }
@@ -449,7 +467,7 @@ export async function calculateEstimate(
         plotAreaUnit: input.plotAreaUnit ?? 'sqft',
         builtupAreaPerFloorSqft: builtupPerFloorSqft.toFixed(2),
         floorCount: input.floorCount === 0 ? 'Ground' : `G+${input.floorCount}`,
-        floorMultiplier: numberOfFloors.toFixed(4),
+        numberOfFloors: numberOfFloors,
         floorBreakdownJson: input.floorBreakdown ?? null,
         carParkingAreaSqft: carParkingAreaSqft.toFixed(2),
         carCount,

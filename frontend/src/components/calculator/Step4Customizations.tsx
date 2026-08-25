@@ -30,15 +30,21 @@ export const Step4Customizations: React.FC<Step4Props> = ({
   // Auto-select package defaults when config loads
   useEffect(() => {
     if (config && formData.customizations.length === 0) {
-      const defaults = config.specifications.flatMap(cat => 
-        cat.items.filter(item => item.isCustomizable).map(item => {
-          const defaultOpt = item.options.find(o => o.isPackageDefault) || item.options[0];
-          return { itemSlug: item.slug, optionSlug: defaultOpt?.slug || '' };
-        }).filter(c => c.optionSlug)
+      const defaults = config.specifications.flatMap((cat) =>
+        cat.items
+          .filter((item) => item.isCustomizable)
+          .map((item) => {
+            const defaultOpt = item.options.find((o) => o.isPackageDefault) || item.options[0];
+            return { itemSlug: item.slug, optionSlug: defaultOpt?.slug || '' };
+          })
+          .filter((c) => c.optionSlug)
       );
-      onChange({ customizations: defaults });
+      if (defaults.length > 0) {
+        onChange({ customizations: defaults });
+      }
     }
-  }, [config, formData.customizations.length, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, formData.customizations.length]);
 
   useEffect(() => {
     let isMounted = true;

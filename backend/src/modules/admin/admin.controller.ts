@@ -173,6 +173,8 @@ export async function getAuditLogsController(req: Request, res: Response, next: 
       pagination: {
         page: result.page,
         limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages,
       },
     });
   } catch (error) {
