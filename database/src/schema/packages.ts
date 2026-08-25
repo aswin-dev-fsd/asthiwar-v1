@@ -15,7 +15,7 @@ export const packages = pgTable('packages', {
 
 export const packagePrices = pgTable('package_prices', {
   id: serial('id').primaryKey(),
-  packageId: integer('package_id').references(() => packages.id, { onDelete: 'cascade' }).notNull(),
+  packageId: integer('package_id').references(() => packages.id, { onDelete: 'cascade' }).notNull().unique(),
   pricePerSqft: numeric('price_per_sqft', { precision: 10, scale: 2 }).notNull(), // Standard rate <= 3500 sq.ft
   headRoomPricePerSqft: numeric('head_room_price_per_sqft', { precision: 10, scale: 2 }).default('0.00').notNull(),
   volumeDiscountThresholdSqft: integer('volume_discount_threshold_sqft').default(3500).notNull(),

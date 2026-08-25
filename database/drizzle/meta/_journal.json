@@ -43,6 +43,13 @@
       "when": 1787674870000,
       "tag": "0005_rename_floor_multiplier",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787676000000,
+      "tag": "0006_unique_package_prices_package_id",
+      "breakpoints": true
     }
   ]
 }
