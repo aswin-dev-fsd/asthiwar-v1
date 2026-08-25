@@ -5,7 +5,7 @@
 > **Auditor:** AI Code Analysis (Exhaustive — All Files Read)  
 > **Scope:** Full-stack — Backend (Node/Express/TypeScript), Frontend (React/TypeScript), Database (PostgreSQL/Drizzle)  
 > **Total Issues Found:** 32  
-> **Status:** BUG-01 through BUG-06, BUG-08 through BUG-10 — ✅ FIXED  |  BUG-07, BUG-11 through BUG-32 — ⚠️ Open
+> **Status:** BUG-01 through BUG-06, BUG-08 through BUG-10 — ✅ FIXED  |  BUG-11 — ⏭️ DEFERRED (Out of Scope / Future Integration)  |  BUG-07, BUG-12 through BUG-32 — ⚠️ Open
 
 ---
 
@@ -95,7 +95,7 @@ A full, line-by-line audit of every file in the ASTHIWAR monorepo identified **3
 | BUG-08 | 🟠 High | All step components | UX | All wizard step badge labels are wrong |
 | BUG-09 | 🟠 High | `admin.service.ts` | Logic | `sortBy` query parameter silently ignored |
 | BUG-10 | 🟠 High | `errorHandler.ts`, `admin-config.controller.ts` | Audit | Audit trail always records anonymous actor |
-| BUG-11 | 🟠 High | `notifications.service.ts` | Integration | No actual email or WhatsApp dispatch |
+| BUG-11 | ⏭️ Deferred | `notifications.service.ts` | Integration | No actual email or WhatsApp dispatch (Out of Scope for Current Phase) |
 | BUG-12 | 🟠 High | `Step4Customizations.tsx` | React | Auto-default effect has infinite re-render risk |
 | BUG-13 | 🟠 High | `adminApi.ts` | API | Two admin API URLs don't match backend routes (404) |
 | BUG-14 | 🟠 High | `AdminLogin.tsx` | Security | Real admin credentials hardcoded in frontend source |
@@ -517,13 +517,13 @@ actorId: (req as any).user?.id || (req as any).user?.email || null,
 
 ---
 
-### BUG-11 — No Actual Email or WhatsApp Dispatch
+### BUG-11 — No Actual Email or WhatsApp Dispatch (⏭️ Deferred / Out of Scope)
 
 | Field | Value |
 |---|---|
-| **Severity** | 🟠 High |
+| **Severity** | ⏭️ Deferred / Out of Scope |
 | **File** | `backend/src/modules/notifications/notifications.service.ts` |
-| **Impact** | Customers never receive their estimate quotation by email or WhatsApp. Admin lead alerts are never delivered. All notification features are simulated. |
+| **Status Note** | Deferred for future phase when live production messaging credentials (SMTP / WhatsApp Business API / Twilio) are provisioned. The database notification queue functions as designed for development/staging. |
 
 **Root Cause:**
 
