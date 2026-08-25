@@ -59,7 +59,7 @@ export const Step3Packages: React.FC<Step3Props> = ({
   return (
     <div className="max-w-5xl mx-auto animate-fade-in" id="packages-overview">
       <div className="text-center mb-8">
-        <span className="badge badge-gold mb-3">Step 4 of 5 • Specification Tier</span>
+        <span className="badge badge-gold mb-3">Step 2 of 4 • Specification Tier</span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
           Choose Construction Package
         </h2>

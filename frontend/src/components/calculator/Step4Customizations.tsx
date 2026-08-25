@@ -106,7 +106,7 @@ export const Step4Customizations: React.FC<Step4Props> = ({
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
       <div className="text-center mb-6">
-        <span className="badge badge-gold mb-3">Step 5 of 5 • Tailor & Upgrade</span>
+        <span className="badge badge-gold mb-3">Step 3 of 4 • Tailor & Upgrade</span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
           Brand Upgrades & Add-Ons Catalog
         </h2>

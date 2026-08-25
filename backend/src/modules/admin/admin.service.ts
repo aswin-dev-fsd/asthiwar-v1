@@ -70,9 +70,15 @@ export async function getAdminEnquiries(query: EnquiriesQuery) {
   const total = Number(totalCountResult[0]?.count || 0);
 
   // Fetch paginated rows
-  const orderByClause = query.sortOrder === 'asc'
-    ? asc(schema.enquiries.createdAt)
-    : desc(schema.enquiries.createdAt);
+  const sortColumns: Record<string, any> = {
+    createdAt: schema.enquiries.createdAt,
+    fullName: schema.enquiries.fullName,
+    plotLocation: schema.enquiries.plotLocation,
+    status: schema.enquiries.status,
+    estimateNumber: schema.enquiries.estimateNumber,
+  };
+  const sortCol = sortColumns[query.sortBy || 'createdAt'] || schema.enquiries.createdAt;
+  const orderByClause = query.sortOrder === 'asc' ? asc(sortCol) : desc(sortCol);
 
   const rows = await db
     .select({
@@ -205,9 +211,17 @@ export async function getAdminEstimates(query: EstimatesQuery) {
 
   const total = Number(totalCountResult[0]?.count || 0);
 
-  const orderByClause = query.sortOrder === 'asc'
-    ? asc(schema.estimates.createdAt)
-    : desc(schema.estimates.createdAt);
+  const sortColumns: Record<string, any> = {
+    createdAt: schema.estimates.createdAt,
+    estimateNumber: schema.estimates.estimateNumber,
+    customerName: schema.estimates.customerName,
+    plotLocation: schema.estimates.plotLocation,
+    totalProjectCost: schema.estimates.totalProjectCost,
+    totalBuiltupAreaSqft: schema.estimates.totalBuiltupAreaSqft,
+    status: schema.estimates.status,
+  };
+  const sortCol = sortColumns[query.sortBy || 'createdAt'] || schema.estimates.createdAt;
+  const orderByClause = query.sortOrder === 'asc' ? asc(sortCol) : desc(sortCol);
 
   const rows = await db
     .select({

@@ -6,7 +6,7 @@ Audit Date   : 2026
 Auditor      : AI Code Analysis (Exhaustive — Every File Read & Cross-Referenced)
 Scope        : Full-Stack (Backend / Frontend / Database)
 Total Issues : 32
-Status       : BUG-01 through BUG-06 — FIXED  |  BUG-07 through BUG-32 — Open
+Status       : BUG-01 through BUG-06, BUG-08 through BUG-10 — FIXED  |  BUG-07, BUG-11 through BUG-32 — Open
 ================================================================================
 
 

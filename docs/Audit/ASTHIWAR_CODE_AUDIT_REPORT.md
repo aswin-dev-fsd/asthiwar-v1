@@ -5,7 +5,7 @@
 > **Auditor:** AI Code Analysis (Exhaustive — All Files Read)  
 > **Scope:** Full-stack — Backend (Node/Express/TypeScript), Frontend (React/TypeScript), Database (PostgreSQL/Drizzle)  
 > **Total Issues Found:** 32  
-> **Status:** BUG-01 through BUG-06 — ✅ FIXED  |  BUG-07 through BUG-32 — ⚠️ Open
+> **Status:** BUG-01 through BUG-06, BUG-08 through BUG-10 — ✅ FIXED  |  BUG-07, BUG-11 through BUG-32 — ⚠️ Open
 
 ---
 

@@ -33,7 +33,7 @@ export const Step0LeadCapture: React.FC<Step0Props> = ({
   return (
     <div className="max-w-xl mx-auto animate-fade-in">
       <div className="text-center mb-8">
-        <span className="badge badge-gold mb-3">Step 4 of 4 • Client Details</span>
+        <span className="badge badge-gold mb-3">Step 4 of 4 • Details</span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
           Almost Done!
         </h2>
