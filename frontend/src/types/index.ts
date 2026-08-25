@@ -102,6 +102,15 @@ export interface MilestoneStage {
   keyDeliverables?: string;
 }
 
+export interface MilestoneStageConfig {
+  id?: number;
+  stageNumber: number;
+  stageName: string;
+  percentage: number;
+  keyDeliverables: string;
+  isActive?: boolean;
+}
+
 export interface CalculationBreakdown {
   totalBuiltupAreaSqft?: number;
   isVolumeRateApplied?: boolean;

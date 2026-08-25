@@ -237,3 +237,25 @@ export async function updateLocationMultiplier(
   });
   return handleAdminResponse(res);
 }
+
+export async function getAdminMilestoneConfigs() {
+  const res = await adminFetch(`${API_BASE}/config/milestones`);
+  return handleAdminResponse<any[]>(res);
+}
+
+export async function updateAdminMilestones(milestones: Array<{
+  id?: number;
+  stageNumber: number;
+  stageName: string;
+  percentage: number;
+  keyDeliverables: string;
+  isActive?: boolean;
+}>) {
+  const res = await adminFetch(`${API_BASE}/config/milestones`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ milestones }),
+  });
+  return handleAdminResponse(res);
+}
+

@@ -16,6 +16,7 @@ import {
   UpdateAddonMetadataDto,
   UpdateOptionPriceDto,
   UpdatePackageItemDto,
+  UpdateMilestonesDto,
 } from './admin-config.schema.js';
 import { AdminServiceError } from './admin.service.js';
 
@@ -327,3 +328,51 @@ export async function updateAdminPackageItem(packageItemId: number, dto: UpdateP
 
   return updated;
 }
+
+// ----------------------------------------------------
+// 5. MILESTONES CONFIGURATION
+// ----------------------------------------------------
+
+export async function getAdminMilestones() {
+  const stages = await db
+    .select()
+    .from(schema.milestoneStages)
+    .orderBy(asc(schema.milestoneStages.stageNumber));
+
+  return stages;
+}
+
+export async function updateAdminMilestones(dto: UpdateMilestonesDto) {
+  // Use transaction to update all milestone stages atomically
+  const updatedStages = await db.transaction(async (tx) => {
+    const results = [];
+    for (const m of dto.milestones) {
+      const [stage] = await tx
+        .insert(schema.milestoneStages)
+        .values({
+          stageNumber: m.stageNumber,
+          stageName: m.stageName,
+          percentage: m.percentage.toFixed(2),
+          keyDeliverables: m.keyDeliverables,
+          isActive: m.isActive ?? true,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: schema.milestoneStages.stageNumber,
+          set: {
+            stageName: m.stageName,
+            percentage: m.percentage.toFixed(2),
+            keyDeliverables: m.keyDeliverables,
+            isActive: m.isActive ?? true,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      results.push(stage);
+    }
+    return results;
+  });
+
+  return updatedStages.sort((a, b) => a.stageNumber - b.stageNumber);
+}
+

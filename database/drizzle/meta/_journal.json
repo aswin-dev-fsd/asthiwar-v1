@@ -50,6 +50,13 @@
       "when": 1787676000000,
       "tag": "0006_unique_package_prices_package_id",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787677000000,
+      "tag": "0007_create_milestone_stages",
+      "breakpoints": true
     }
   ]
 }

@@ -7,3 +7,5 @@ export * from './estimates';
 export * from './enquiries';
 export * from './notifications';
 export * from './auditLogs';
+export * from './milestones';
+

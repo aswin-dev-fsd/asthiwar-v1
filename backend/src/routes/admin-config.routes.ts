@@ -10,6 +10,7 @@ import {
   updateAddonMetadataSchema,
   updateOptionPriceSchema,
   updatePackageItemSchema,
+  updateMilestonesSchema,
 } from '../modules/admin/admin-config.schema.js';
 import {
   getPackagesController,
@@ -24,6 +25,8 @@ import {
   getSpecificationsController,
   updateOptionPriceController,
   updatePackageItemController,
+  getMilestonesController,
+  updateMilestonesController,
 } from '../modules/admin/admin-config.controller.js';
 
 const router = Router();
@@ -89,6 +92,16 @@ router.patch(
   '/package-items/:id',
   validateRequest({ body: updatePackageItemSchema }),
   updatePackageItemController
+);
+
+// ----------------------------------------------------
+// 5. Milestone Payment Stages Routes
+// ----------------------------------------------------
+router.get('/milestones', getMilestonesController);
+router.put(
+  '/milestones',
+  validateRequest({ body: updateMilestonesSchema }),
+  updateMilestonesController
 );
 
 export default router;

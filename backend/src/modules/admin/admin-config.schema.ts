@@ -54,6 +54,32 @@ export const updatePackageItemSchema = z.object({
   defaultOptionId: z.coerce.number().int().optional().nullable(),
 });
 
+export const milestoneStageItemSchema = z.object({
+  id: z.coerce.number().optional(),
+  stageNumber: z.coerce.number().int().positive('Stage number must be a positive integer'),
+  stageName: z.string().min(2, 'Stage name must be at least 2 characters'),
+  percentage: z.coerce.number().positive('Percentage must be positive'),
+  keyDeliverables: z.string().min(3, 'Key deliverables must be at least 3 characters'),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateMilestonesSchema = z.object({
+  milestones: z
+    .array(milestoneStageItemSchema)
+    .min(1, 'At least one milestone stage is required')
+    .refine(
+      (items) => {
+        const sum = items
+          .filter((item) => item.isActive !== false)
+          .reduce((acc, curr) => acc + Number(curr.percentage), 0);
+        return Math.abs(sum - 100) < 0.01;
+      },
+      {
+        message: 'Active milestone percentages must sum to exactly 100.00%',
+      }
+    ),
+});
+
 export type UpdatePackagePriceDto = z.infer<typeof updatePackagePriceSchema>;
 export type UpdatePackageMetadataDto = z.infer<typeof updatePackageMetadataSchema>;
 export type CreateLocationDto = z.infer<typeof createLocationSchema>;
@@ -62,3 +88,6 @@ export type UpdateAddonPriceDto = z.infer<typeof updateAddonPriceSchema>;
 export type UpdateAddonMetadataDto = z.infer<typeof updateAddonMetadataSchema>;
 export type UpdateOptionPriceDto = z.infer<typeof updateOptionPriceSchema>;
 export type UpdatePackageItemDto = z.infer<typeof updatePackageItemSchema>;
+export type MilestoneStageItemDto = z.infer<typeof milestoneStageItemSchema>;
+export type UpdateMilestonesDto = z.infer<typeof updateMilestonesSchema>;
+

@@ -12,12 +12,15 @@ import {
   estimates,
   estimateItems,
   estimateAddons,
+  milestoneStages,
+  schema,
   eq,
   and,
   sql,
   isNull,
   or,
   inArray,
+  asc,
 } from '@asthiwar/database';
 import {
   AreaUnit,
@@ -368,14 +371,29 @@ export async function calculateEstimate(
     ? Number((totalProjectCost / totalBuiltupAreaSqft).toFixed(2))
     : 0;
 
-  // 7. Milestone Phase Schedule (10-Stage Breakdown)
+  // 7. Milestone Phase Schedule
+  const dbMilestones = await db
+    .select()
+    .from(milestoneStages)
+    .where(eq(milestoneStages.isActive, true))
+    .orderBy(asc(milestoneStages.stageNumber));
+
+  const activeMilestoneDefs = dbMilestones.length > 0
+    ? dbMilestones.map((m) => ({
+        stageNumber: m.stageNumber,
+        stageName: m.stageName,
+        percentage: Number(m.percentage),
+        keyDeliverables: m.keyDeliverables,
+      }))
+    : MILESTONE_DEFINITIONS;
+
   let distributedAmountSum = 0;
-  const milestones: MilestoneStage[] = MILESTONE_DEFINITIONS.map((m, index) => {
-    const isLast = index === MILESTONE_DEFINITIONS.length - 1;
+  const milestones: MilestoneStage[] = activeMilestoneDefs.map((m, index) => {
+    const isLast = index === activeMilestoneDefs.length - 1;
     let amount = Math.round(totalProjectCost * (m.percentage / 100));
 
     if (isLast) {
-      // Ensure sum is exactly 100% equal to totalProjectCost
+      // Ensure sum is exactly equal to totalProjectCost
       amount = totalProjectCost - distributedAmountSum;
     } else {
       distributedAmountSum += amount;

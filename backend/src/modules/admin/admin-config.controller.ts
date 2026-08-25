@@ -12,6 +12,8 @@ import {
   getAdminSpecifications,
   updateAdminOptionPrice,
   updateAdminPackageItem,
+  getAdminMilestones,
+  updateAdminMilestones,
 } from './admin-config.service.js';
 import {
   UpdatePackagePriceDto,
@@ -22,6 +24,7 @@ import {
   UpdateAddonMetadataDto,
   UpdateOptionPriceDto,
   UpdatePackageItemDto,
+  UpdateMilestonesDto,
 } from './admin-config.schema.js';
 import { AdminServiceError } from './admin.service.js';
 
@@ -285,3 +288,57 @@ export async function updatePackageItemController(req: Request, res: Response, n
     next(error);
   }
 }
+
+// ----------------------------------------------------
+// MILESTONES CONTROLLER
+// ----------------------------------------------------
+
+export async function getMilestonesController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const stages = await getAdminMilestones();
+    res.json({
+      success: true,
+      data: stages,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateMilestonesController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const dto = req.body as UpdateMilestonesDto;
+    const updatedStages = await updateAdminMilestones(dto);
+
+    logAuditEvent({
+      eventType: 'ADMIN_MUTATION',
+      action: 'UPDATE_MILESTONES',
+      severity: 'HIGH',
+      actorType: 'ADMIN',
+      actorId: (req as any).user?.email || (req as any).user?.id,
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+      metadata: {
+        totalStages: updatedStages.length,
+        sumPercentage: updatedStages.reduce((acc, s) => acc + Number(s.percentage), 0),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Milestone payment stages updated successfully',
+      data: updatedStages,
+    });
+  } catch (error) {
+    if (error instanceof AdminServiceError) {
+      res.status(error.statusCode).json({
+        success: false,
+        error: { code: error.code, message: error.message },
+      });
+      return;
+    }
+    next(error);
+  }
+}
+
