@@ -94,7 +94,7 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
       <div className="text-center mb-8">
-        <span className="badge badge-gold mb-3">Step 1 of 4 • Dimensions & Floors</span>
+        <span className="badge badge-gold mb-3">Step 1 of 5 • Dimensions & Floors</span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
           Dimensions & Floor Configuration
         </h2>

@@ -6,6 +6,7 @@ import {
   Sliders,
   FileText,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { Location, Package, EstimateFormState, CalculationResult } from '../../types';
 import { getLocations, getPackages, createAuthoritativeEstimate } from '../../services/api';
@@ -13,6 +14,7 @@ import { Step0LeadCapture } from './Step0LeadCapture';
 import { Step1Dimensions } from './Step1Dimensions';
 import { Step3Packages } from './Step3Packages';
 import { Step4Customizations } from './Step4Customizations';
+import { Step4Addons } from './Step4Addons';
 import { Step5EstimateReport } from './Step5EstimateReport';
 
 const INITIAL_FORM_STATE: EstimateFormState = {
@@ -42,8 +44,9 @@ const STEP_LABELS = [
   { step: 0, label: 'Dimensions', icon: Ruler },
   { step: 1, label: 'Package', icon: PackageIcon },
   { step: 2, label: 'Customise', icon: Sliders },
-  { step: 3, label: 'Details', icon: User },
-  { step: 4, label: 'Estimate', icon: FileText },
+  { step: 3, label: 'Add-Ons', icon: Sparkles },
+  { step: 4, label: 'Details', icon: User },
+  { step: 5, label: 'Estimate', icon: FileText },
 ];
 
 export const CalculatorWizard: React.FC = () => {
@@ -83,7 +86,7 @@ export const CalculatorWizard: React.FC = () => {
     try {
       const result = await createAuthoritativeEstimate(formData);
       setEstimateResult(result);
-      setCurrentStep(4);
+      setCurrentStep(5);
       setCalculating(false);
     } catch (err: any) {
       setError(err?.message || 'Calculation error occurred.');
@@ -110,10 +113,10 @@ export const CalculatorWizard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Stepper Progress Bar */}
-      {currentStep < 4 && (
+      {currentStep < 5 && (
         <div className="max-w-2xl mx-auto mb-10">
-          <div className="grid grid-cols-4 gap-2 text-center">
-            {STEP_LABELS.slice(0, 4).map((s) => {
+          <div className="grid grid-cols-5 gap-2 text-center">
+            {STEP_LABELS.slice(0, 5).map((s) => {
               const Icon = s.icon;
               const isCompleted = currentStep > s.step;
               const isActive = currentStep === s.step;
@@ -147,7 +150,7 @@ export const CalculatorWizard: React.FC = () => {
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-3">
             <div
               className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / 4) * 100}%` }}
+              style={{ width: `${((currentStep + 1) / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -202,16 +205,25 @@ export const CalculatorWizard: React.FC = () => {
           )}
 
           {currentStep === 3 && (
+            <Step4Addons
+              formData={formData}
+              onChange={handleUpdateForm}
+              onNext={() => setCurrentStep(4)}
+              onBack={() => setCurrentStep(2)}
+            />
+          )}
+
+          {currentStep === 4 && (
             <Step0LeadCapture
               formData={formData}
               locations={locations}
               onChange={handleUpdateForm}
               onNext={handleFinalCalculate}
-              onBack={() => setCurrentStep(2)}
+              onBack={() => setCurrentStep(3)}
             />
           )}
 
-          {currentStep === 4 && estimateResult && (
+          {currentStep === 5 && estimateResult && (
             <Step5EstimateReport result={estimateResult} onReset={handleReset} />
           )}
         </>
