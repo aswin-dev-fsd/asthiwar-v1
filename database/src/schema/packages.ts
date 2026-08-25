@@ -20,7 +20,5 @@ export const packagePrices = pgTable('package_prices', {
   headRoomPricePerSqft: numeric('head_room_price_per_sqft', { precision: 10, scale: 2 }).default('0.00').notNull(),
   volumeDiscountThresholdSqft: integer('volume_discount_threshold_sqft').default(3500).notNull(),
   volumePricePerSqft: numeric('volume_price_per_sqft', { precision: 10, scale: 2 }).notNull(), // Volume rate > 3500 sq.ft
-  effectiveFrom: timestamp('effective_from', { withTimezone: true }).defaultNow().notNull(),
-  effectiveTo: timestamp('effective_to', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

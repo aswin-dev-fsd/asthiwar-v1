@@ -220,15 +220,13 @@ export async function calculateEstimate(
       if (optRows.length === 0) continue;
       const opt = optRows[0];
 
-      // Check option price delta for current package or universal
       const priceRows = await db
         .select()
         .from(optionPrices)
         .where(
           and(
             eq(optionPrices.optionId, opt.id),
-            or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId)),
-            isNull(optionPrices.effectiveTo)
+            or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
           )
         )
         .limit(1);
@@ -304,8 +302,7 @@ export async function calculateEstimate(
         .where(
           and(
             eq(addonPrices.addonId, add.id),
-            eq(addonPrices.variantSlug, ad.variantSlug),
-            isNull(addonPrices.effectiveTo)
+            eq(addonPrices.variantSlug, ad.variantSlug)
           )
         );
 
@@ -375,7 +372,16 @@ export async function calculateEstimate(
     };
   });
 
-  const estimateNumber = generateEstimateNumber();
+  let estimateNumber = generateEstimateNumber();
+  let retries = 0;
+  while (retries < 10) {
+    const existing = await db.query.estimates.findFirst({
+      where: eq(estimates.estimateNumber, estimateNumber),
+    });
+    if (!existing) break;
+    estimateNumber = generateEstimateNumber();
+    retries++;
+  }
 
   const result: CalculationResult = {
     estimateNumber,

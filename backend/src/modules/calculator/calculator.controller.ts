@@ -75,10 +75,7 @@ export async function getPackages(req: Request, res: Response, next: NextFunctio
       .from(packages)
       .innerJoin(packagePrices, eq(packagePrices.packageId, packages.id))
       .where(
-        and(
-          eq(packages.isActive, true),
-          isNull(packagePrices.effectiveTo)
-        )
+        eq(packages.isActive, true)
       )
       .orderBy(asc(packages.sortOrder));
 
@@ -181,8 +178,7 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
         optionPrices,
         and(
           eq(optionPrices.optionId, options.id),
-          eq(optionPrices.packageId, pkg.id),
-          isNull(optionPrices.effectiveTo)
+          eq(optionPrices.packageId, pkg.id)
         )
       );
 
@@ -237,8 +233,7 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
 
     const addonPriceRows = await db
       .select()
-      .from(addonPrices)
-      .where(isNull(addonPrices.effectiveTo));
+      .from(addonPrices);
 
     const addonsData = addonRows.map((ad) => {
       const variants = addonPriceRows

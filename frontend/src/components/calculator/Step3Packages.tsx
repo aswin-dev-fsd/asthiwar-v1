@@ -52,8 +52,7 @@ export const Step3Packages: React.FC<Step3Props> = ({
   onBack,
 }) => {
   // Calculate total builtup area to determine volume rate
-  const floorMultipliers: Record<string, number> = { Ground: 1, 'G+1': 2, 'G+2': 3, 'G+3': 4 };
-  const multiplier = floorMultipliers[formData.floorCount] || 2;
+  const multiplier = (formData.floorCount || 0) + 1;
   const totalBuiltup = (formData.builtupAreaPerFloor * multiplier) + formData.carParkingAreaSqft;
   const isVolume = totalBuiltup > 3500;
 

@@ -83,7 +83,7 @@ export const CalculatorWizard: React.FC = () => {
     try {
       const result = await createAuthoritativeEstimate(formData);
       setEstimateResult(result);
-      setCurrentStep(5);
+      setCurrentStep(4);
       setCalculating(false);
     } catch (err: any) {
       setError(err?.message || 'Calculation error occurred.');

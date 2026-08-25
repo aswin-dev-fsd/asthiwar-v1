@@ -4,6 +4,7 @@ export const updatePackagePriceSchema = z.object({
   pricePerSqft: z.coerce.number().positive('Standard price per sqft must be positive'),
   volumePricePerSqft: z.coerce.number().positive('Volume price per sqft must be positive'),
   volumeDiscountThresholdSqft: z.coerce.number().int().positive().default(3500),
+  headRoomPricePerSqft: z.coerce.number().nonnegative().optional(),
 });
 
 export const updatePackageMetadataSchema = z.object({
