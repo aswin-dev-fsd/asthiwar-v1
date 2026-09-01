@@ -48,9 +48,10 @@ import { logAuditEvent } from '../../services/audit.service.js';
 
 export async function updatePackagePriceController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const packageId = parseInt(req.params.id as string, 10);
+    const rawId = req.params.id as string;
+    const packageIdOrSlug = !isNaN(Number(rawId)) ? parseInt(rawId, 10) : rawId;
     const dto = req.body as UpdatePackagePriceDto;
-    const newPrice = await updateAdminPackagePrice(packageId, dto);
+    const newPrice = await updateAdminPackagePrice(packageIdOrSlug, dto);
 
     logAuditEvent({
       eventType: 'ADMIN_MUTATION',
@@ -62,7 +63,7 @@ export async function updatePackagePriceController(req: Request, res: Response, 
       httpMethod: req.method,
       statusCode: 200,
       metadata: {
-        packageId,
+        packageIdOrSlug,
         pricePerSqft: dto.pricePerSqft,
         volumePricePerSqft: dto.volumePricePerSqft,
         volumeDiscountThresholdSqft: dto.volumeDiscountThresholdSqft,
@@ -187,9 +188,10 @@ export async function getAddonsController(req: Request, res: Response, next: Nex
 
 export async function updateAddonPriceController(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const addonId = parseInt(req.params.id as string, 10);
+    const rawId = req.params.id as string;
+    const addonIdOrSlug = !isNaN(Number(rawId)) ? parseInt(rawId, 10) : rawId;
     const dto = req.body as UpdateAddonPriceDto;
-    const newPrice = await updateAdminAddonPrice(addonId, dto);
+    const newPrice = await updateAdminAddonPrice(addonIdOrSlug, dto);
     res.json({
       success: true,
       message: 'Add-on variant price updated successfully with history versioning',

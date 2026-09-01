@@ -343,8 +343,13 @@ async function seedSpecifications(
     isDefault: o.isDefault,
   }));
 
-  await db.insert(options).values(optionInserts).onConflictDoNothing();
-  log('Options', optionInserts.length);
+  const existingOptions = await db.select().from(options);
+  const existingOptionKeys = new Set(existingOptions.map(o => `${o.itemId}_${o.slug}`));
+  const newOptions = optionInserts.filter(o => !existingOptionKeys.has(`${o.itemId}_${o.slug}`));
+  if (newOptions.length > 0) {
+    await db.insert(options).values(newOptions).onConflictDoNothing();
+  }
+  log('Options', newOptions.length);
 
   // Fetch option IDs
   const optionRows = await db.select().from(options);
@@ -621,8 +626,13 @@ async function seedSpecifications(
     additionalCostPrice:  d.additionalCostPrice,
   }));
 
-  await db.insert(packageItems).values(piInserts).onConflictDoNothing();
-  log('Package Items (package × item mappings)', piInserts.length);
+  const existingPIs = await db.select().from(packageItems);
+  const existingPIKeys = new Set(existingPIs.map(pi => `${pi.packageId}_${pi.itemId}`));
+  const newPIs = piInserts.filter(pi => !existingPIKeys.has(`${pi.packageId}_${pi.itemId}`));
+  if (newPIs.length > 0) {
+    await db.insert(packageItems).values(newPIs).onConflictDoNothing();
+  }
+  log('Package Items (package × item mappings)', newPIs.length);
 
   // -------------------------------------------------------------------------
   // OPTION_PRICES — upgrade deltas for brand options
@@ -652,8 +662,13 @@ async function seedSpecifications(
     priceType:   d.priceType,
   }));
 
-  await db.insert(optionPrices).values(opInserts).onConflictDoNothing();
-  log('Option Prices (upgrade deltas)', opInserts.length);
+  const existingOPs = await db.select().from(optionPrices);
+  const existingOPKeys = new Set(existingOPs.map(op => `${op.optionId}_${op.packageId}`));
+  const newOPs = opInserts.filter(op => !existingOPKeys.has(`${op.optionId}_${op.packageId}`));
+  if (newOPs.length > 0) {
+    await db.insert(optionPrices).values(newOPs).onConflictDoNothing();
+  }
+  log('Option Prices (upgrade deltas)', newOPs.length);
 }
 
 // ---------------------------------------------------------------------------
@@ -764,9 +779,9 @@ async function seedAddons() {
     // 4. Compound Wall: ₹2,300/rft (solid/fly ash), ₹2,900/rft (red brick)
     { addonSlug: 'compound_wall', variantName: 'Solid Block / Fly Ash', variantSlug: 'solid_flyash', packageTier: 'all', price: '2300.00' },
     { addonSlug: 'compound_wall', variantName: 'Red Brick',             variantSlug: 'red_brick',    packageTier: 'all', price: '2900.00' },
-    // 5. Rooftop Solar: ₹1,80,000 (3kW), ₹3,60,000 (5kW)
-    { addonSlug: 'rooftop_solar', variantName: '3 kW System', variantSlug: '3kw', packageTier: 'all', price: '180000.00' },
-    { addonSlug: 'rooftop_solar', variantName: '5 kW System', variantSlug: '5kw', packageTier: 'all', price: '360000.00' },
+    // 5. Rooftop Solar: ₹1,85,000 (3kW), ₹2,95,000 (5kW)
+    { addonSlug: 'rooftop_solar', variantName: '3 kW System', variantSlug: '3kw', packageTier: 'all', price: '185000.00' },
+    { addonSlug: 'rooftop_solar', variantName: '5 kW System', variantSlug: '5kw', packageTier: 'all', price: '295000.00' },
     // 6. Main Gate: ₹150/sqft (MS), ₹300/sqft (SS)
     { addonSlug: 'main_gate', variantName: 'MS Gate',             variantSlug: 'ms_gate', packageTier: 'all', price: '150.00' },
     { addonSlug: 'main_gate', variantName: 'Stainless Steel Gate',variantSlug: 'ss_gate', packageTier: 'all', price: '300.00' },
@@ -801,8 +816,13 @@ async function seedAddons() {
     price:       d.price,
   }));
 
-  await db.insert(addonPrices).values(apInserts).onConflictDoNothing();
-  log('Add-On Prices', apInserts.length);
+  const existingAPs = await db.select().from(addonPrices);
+  const existingAPKeys = new Set(existingAPs.map(ap => `${ap.addonId}_${ap.variantSlug}_${ap.packageTier}`));
+  const newAPs = apInserts.filter(ap => !existingAPKeys.has(`${ap.addonId}_${ap.variantSlug}_${ap.packageTier}`));
+  if (newAPs.length > 0) {
+    await db.insert(addonPrices).values(newAPs).onConflictDoNothing();
+  }
+  log('Add-On Prices', newAPs.length);
 }
 
 // ---------------------------------------------------------------------------

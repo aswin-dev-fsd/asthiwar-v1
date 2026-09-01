@@ -47,7 +47,7 @@ export const AdminPricingConfigManager: React.FC = () => {
   const [savingId, setSavingId] = useState<string | number | null>(null);
 
   // Edit states for packages
-  const [pkgEdit, setPkgEdit] = useState<Record<string, { std: number; vol: number; reason: string }>>({});
+  const [pkgEdit, setPkgEdit] = useState<Record<string, { std: number; vol: number; threshold: number; reason: string }>>({});
   // Edit states for addon variants
   const [addonEdit, setAddonEdit] = useState<Record<string, { price: number; reason: string }>>({});
   // Edit states for locations
@@ -90,9 +90,11 @@ export const AdminPricingConfigManager: React.FC = () => {
         pkgs.forEach((p) => {
           const std = p.activePrice?.pricePerSqft ?? p.pricePerSqft ?? p.standardPricePerSqft ?? 0;
           const vol = p.activePrice?.volumePricePerSqft ?? p.volumePricePerSqft ?? 0;
+          const threshold = p.activePrice?.volumeDiscountThresholdSqft ?? p.volumeDiscountThresholdSqft ?? 3500;
           pkgMap[p.slug] = {
             std: Number(std),
             vol: Number(vol),
+            threshold: Number(threshold),
             reason: '',
           };
         });
@@ -181,6 +183,7 @@ export const AdminPricingConfigManager: React.FC = () => {
       await updatePackagePrices(slug, {
         standardPricePerSqft: edit.std,
         volumePricePerSqft: edit.vol,
+        volumeDiscountThresholdSqft: edit.threshold,
         changeReason: edit.reason,
       });
       setSuccessMessage(`Package ${slug.toUpperCase()} prices updated with versioned audit history!`);
@@ -338,7 +341,7 @@ export const AdminPricingConfigManager: React.FC = () => {
       {activeTab === 'packages' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {packages.map((pkg: any) => {
-            const edit = pkgEdit[pkg.slug] || { std: 0, vol: 0, reason: '' };
+            const edit = pkgEdit[pkg.slug] || { std: 0, vol: 0, threshold: 3500, reason: '' };
             const isSaving = savingId === pkg.slug;
 
             return (
@@ -353,16 +356,17 @@ export const AdminPricingConfigManager: React.FC = () => {
                   <span className="badge badge-gold">Active Rate</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label text-[11px]">
-                      Standard Rate (≤ 3,500 sqft)
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[11px] h-9 flex flex-col justify-end pb-1">
+                      <span className="text-slate-200">Standard Rate</span>
+                      <span className="text-[10px] text-slate-500 font-normal">≤ {edit.threshold.toLocaleString('en-IN')} sq.ft</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">₹</span>
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
                       <input
                         type="number"
-                        className="form-input pl-7 font-bold text-amber-400"
+                        className="form-input pl-8 pr-2 font-bold text-amber-400"
                         value={edit.std}
                         onChange={(e) =>
                           setPkgEdit({
@@ -374,15 +378,37 @@ export const AdminPricingConfigManager: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label text-[11px]">
-                      Volume Rate (&gt; 3,500 sqft)
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[11px] h-9 flex flex-col justify-end pb-1">
+                      <span className="text-slate-200">Volume Threshold</span>
+                      <span className="text-[10px] text-amber-400/80 font-normal">Discount Trigger</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">₹</span>
                       <input
                         type="number"
-                        className="form-input pl-7 font-bold text-amber-400"
+                        className="form-input pl-3.5 pr-11 font-bold text-amber-400"
+                        value={edit.threshold}
+                        onChange={(e) =>
+                          setPkgEdit({
+                            ...pkgEdit,
+                            [pkg.slug]: { ...edit, threshold: parseInt(e.target.value) || 0 },
+                          })
+                        }
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 font-semibold uppercase">sqft</span>
+                    </div>
+                  </div>
+
+                  <div className="form-group mb-0">
+                    <label className="form-label text-[11px] h-9 flex flex-col justify-end pb-1">
+                      <span className="text-slate-200">Volume Rate</span>
+                      <span className="text-[10px] text-emerald-400/90 font-normal">&gt; {edit.threshold.toLocaleString('en-IN')} sq.ft</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                      <input
+                        type="number"
+                        className="form-input pl-8 pr-2 font-bold text-amber-400"
                         value={edit.vol}
                         onChange={(e) =>
                           setPkgEdit({

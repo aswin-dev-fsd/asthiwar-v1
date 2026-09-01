@@ -45,8 +45,9 @@ export async function getAdminPackages() {
 }
 
 export async function updateAdminPackagePrice(packageIdOrSlug: number | string, dto: UpdatePackagePriceDto) {
+  const isNumeric = !isNaN(Number(packageIdOrSlug));
   const pkg = await db.query.packages.findFirst({
-    where: typeof packageIdOrSlug === 'number' || !isNaN(Number(packageIdOrSlug))
+    where: isNumeric
       ? eq(schema.packages.id, Number(packageIdOrSlug))
       : eq(schema.packages.slug, String(packageIdOrSlug)),
   });
@@ -178,8 +179,9 @@ export async function getAdminAddons() {
 }
 
 export async function updateAdminAddonPrice(addonIdOrSlug: number | string, dto: UpdateAddonPriceDto) {
+  const isNumeric = !isNaN(Number(addonIdOrSlug));
   const addon = await db.query.addons.findFirst({
-    where: typeof addonIdOrSlug === 'number' || !isNaN(Number(addonIdOrSlug))
+    where: isNumeric
       ? eq(schema.addons.id, Number(addonIdOrSlug))
       : eq(schema.addons.slug, String(addonIdOrSlug)),
   });

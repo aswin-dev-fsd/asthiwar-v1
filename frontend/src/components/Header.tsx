@@ -1,5 +1,4 @@
-import React from 'react';
-import { Building2, Phone, Sparkles, LogOut } from 'lucide-react';
+import { Building2, Phone, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   currentView: 'calculator' | 'admin';
@@ -69,18 +68,6 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, adminUs
             <span className="hidden sm:inline">+91 98765 43210</span>
             <span className="sm:hidden">Call</span>
           </a>
-
-          {/* Sign Out button when Admin is logged in */}
-          {adminUser && (
-            <button
-              onClick={onLogout}
-              className="btn btn-secondary text-xs sm:text-sm py-2 px-3 sm:px-4 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-slate-300 flex items-center gap-1.5 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4 text-red-400" />
-              <span>Sign Out</span>
-            </button>
-          )}
         </div>
       </div>
     </header>
