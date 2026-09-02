@@ -238,6 +238,13 @@ export async function updateLocationMultiplier(
   return handleAdminResponse(res);
 }
 
+export async function deleteAdminLocation(id: number) {
+  const res = await adminFetch(`${API_BASE}/config/locations/${id}`, {
+    method: 'DELETE',
+  });
+  return handleAdminResponse(res);
+}
+
 export async function getAdminMilestoneConfigs() {
   const res = await adminFetch(`${API_BASE}/config/milestones`);
   return handleAdminResponse<any[]>(res);
@@ -255,6 +262,45 @@ export async function updateAdminMilestones(milestones: Array<{
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ milestones }),
+  });
+  return handleAdminResponse(res);
+}
+
+export async function getAdminSpecificationConfigs() {
+  const res = await adminFetch(`${API_BASE}/config/specifications`);
+  return handleAdminResponse<any[]>(res);
+}
+
+export async function createAdminOption(payload: {
+  itemId: number;
+  name: string;
+  slug: string;
+  description?: string;
+  priceDelta?: number;
+}) {
+  const res = await adminFetch(`${API_BASE}/config/options`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleAdminResponse(res);
+}
+
+export async function updateAdminOptionPrice(
+  optionId: number,
+  payload: { name?: string; priceDelta?: number }
+) {
+  const res = await adminFetch(`${API_BASE}/config/options/${optionId}/price`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleAdminResponse(res);
+}
+
+export async function deleteAdminOption(optionId: number) {
+  const res = await adminFetch(`${API_BASE}/config/options/${optionId}`, {
+    method: 'DELETE',
   });
   return handleAdminResponse(res);
 }

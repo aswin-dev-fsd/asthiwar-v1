@@ -3,26 +3,23 @@ import {
   Download,
   Share2,
   Calendar,
-  CheckCircle2,
   Calculator,
   RefreshCw,
   Clock,
   Sparkles,
+  CheckCircle2,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CalculationResult } from '../../types';
 import { submitEnquiry } from '../../services/api';
+import { formatINR } from '../../utils/formatters';
+import { Modal } from '../common/Modal';
 
 interface Step5Props {
   result: CalculationResult;
   onReset: () => void;
-}
-
-function formatINR(amount: number | string | undefined | null): string {
-  if (amount === undefined || amount === null) return '₹0';
-  const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
-  if (isNaN(num)) return '₹0';
-  return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
 export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) => {
@@ -53,19 +50,16 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
       (builtupArea > 0 ? totalCost / builtupArea : 0)
   );
 
-  // EMI Calculator State
   const [loanPercent, setLoanPercent] = useState<number>(80);
   const [interestRate, setInterestRate] = useState<number>(8.5);
   const [tenureYears, setTenureYears] = useState<number>(20);
 
-  // Lead Booking Modal State
   const [showConsultModal, setShowConsultModal] = useState<boolean>(false);
   const [preferredTime, setPreferredTime] = useState<string>('Morning (9 AM - 12 PM)');
-  const [notes, setNotes] = useState<string>('');
+  const [customNotes, setCustomNotes] = useState<string>('');
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Trigger celebration confetti on mount
   useEffect(() => {
     try {
       confetti({
@@ -75,11 +69,9 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         colors: ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'],
       });
     } catch {
-      // Ignore confetti errors
     }
   }, []);
 
-  // Compute EMI
   const loanAmount = (totalCost * loanPercent) / 100;
   const monthlyRate = interestRate / 12 / 100;
   const totalMonths = tenureYears * 12;
@@ -94,7 +86,7 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
   const handleBookConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) return;
-    setSubmitting(true);
+    setIsSubmitting(true);
     try {
       await submitEnquiry({
         fullName: customer.name,
@@ -103,13 +95,13 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         plotLocation: customer.location,
         estimateNumber: result.estimateNumber,
         preferredContactTime: preferredTime,
-        requirementNotes: notes || 'Booked site assessment via web calculator report',
+        requirementNotes: customNotes || 'Booked site assessment via web calculator report',
       });
       setBookingSuccess(true);
-      setSubmitting(false);
+      setIsSubmitting(false);
     } catch (err) {
       console.error(err);
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -124,7 +116,6 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in space-y-8">
-      {/* Top Banner Card */}
       <div className="asthiwar-card relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/60 border-amber-500/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -170,7 +161,6 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
           </div>
         </div>
 
-        {/* Quick Spec Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-800 text-xs">
           <div>
             <span className="text-slate-400">Total Built-Up Area:</span>
@@ -199,7 +189,6 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         </div>
       </div>
 
-      {/* 10-Stage Milestone Phase Schedule */}
       <div className="asthiwar-card">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -252,7 +241,6 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         </div>
       </div>
 
-      {/* Monthly EMI Estimator Slider */}
       <div className="asthiwar-card bg-slate-900/60 border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2">
@@ -323,7 +311,6 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         </div>
       </div>
 
-      {/* Action CTA Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
         <button
           type="button"
@@ -344,87 +331,94 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         </button>
       </div>
 
-      {/* Free Site Visit Booking Modal */}
-      {showConsultModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="asthiwar-card max-w-md w-full animate-fade-in bg-slate-900 border-amber-500/40">
-            {bookingSuccess ? (
-              <div className="text-center py-6">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                <h4 className="text-xl font-bold text-white mb-2">Site Visit Requested!</h4>
-                <p className="text-xs text-slate-300 mb-6">
-                  Our Senior Project Architect will contact you shortly to schedule your on-site plot assessment.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowConsultModal(false);
-                    setBookingSuccess(false);
-                  }}
-                  className="btn btn-primary w-full"
-                >
-                  Done
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleBookConsultation} className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <h4 className="font-heading font-bold text-base text-white">
-                    Book Free Site Assessment
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setShowConsultModal(false)}
-                    className="text-slate-400 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="text-xs text-slate-400">
-                  Site Location: <strong className="text-white">{customer?.location || 'Tamil Nadu'}</strong> • Ref:{' '}
-                  <strong className="text-amber-400">{result.estimateNumber || 'EST-REF'}</strong>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-amber-400" /> Preferred Consultation Time
-                  </label>
-                  <select
-                    className="form-select text-xs"
-                    value={preferredTime}
-                    onChange={(e) => setPreferredTime(e.target.value)}
-                  >
-                    <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
-                    <option value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</option>
-                    <option value="Evening (4 PM - 7:30 PM)">Evening (4 PM - 7:30 PM)</option>
-                    <option value="Weekend Saturday/Sunday">Weekend (Saturday / Sunday)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Special Requirements / Custom Notes</label>
-                  <textarea
-                    rows={3}
-                    placeholder="e.g. Need vaastu compliant floor plan with pooja room facing north-east..."
-                    className="form-textarea text-xs"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn btn-primary w-full py-3 text-sm"
-                >
-                  {submitting ? 'Submitting...' : 'Confirm Free Site Visit'}
-                </button>
-              </form>
-            )}
+      <Modal
+        isOpen={showConsultModal}
+        onClose={() => {
+          setShowConsultModal(false);
+          setBookingSuccess(false);
+        }}
+        title="Book Free Site Assessment"
+        subtitle={`Ref: ${result.estimateNumber || 'EST-REF'}`}
+        maxWidth="max-w-md"
+      >
+        {bookingSuccess ? (
+          <div className="text-center py-6">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+            <h4 className="text-xl font-bold text-white mb-2">Site Visit Requested!</h4>
+            <p className="text-xs text-slate-300 mb-6">
+              Our Senior Project Architect will contact you shortly to schedule your on-site plot assessment.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowConsultModal(false);
+                setBookingSuccess(false);
+              }}
+              className="btn btn-primary w-full"
+            >
+              Done
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleBookConsultation} className="space-y-4">
+            <div className="text-xs text-slate-400">
+              Site Location: <strong className="text-white">{customer?.location || 'Tamil Nadu'}</strong> • Ref:{' '}
+              <strong className="text-amber-400">{result.estimateNumber || 'EST-REF'}</strong>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-amber-400" /> Preferred Consultation Time
+              </label>
+              <select
+                className="form-select text-xs"
+                value={preferredTime}
+                onChange={(e) => setPreferredTime(e.target.value)}
+              >
+                <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
+                <option value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</option>
+                <option value="Evening (4 PM - 7:30 PM)">Evening (4 PM - 7:30 PM)</option>
+                <option value="Weekend Saturday/Sunday">Weekend (Saturday / Sunday)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Special Requirements / Custom Notes</label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Need vaastu compliant floor plan with pooja room facing north-east..."
+                className="form-textarea text-xs"
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowConsultModal(false)}
+                className="btn btn-secondary text-xs py-2 px-4 w-1/3"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn btn-primary text-xs py-2.5 px-4 w-2/3 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Confirm Booking</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

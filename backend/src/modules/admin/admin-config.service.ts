@@ -14,6 +14,7 @@ import {
   UpdateLocationDto,
   UpdateAddonPriceDto,
   UpdateAddonMetadataDto,
+  CreateOptionDto,
   UpdateOptionPriceDto,
   UpdatePackageItemDto,
   UpdateMilestonesDto,
@@ -154,6 +155,22 @@ export async function updateAdminLocation(locationId: number, dto: UpdateLocatio
   return updated;
 }
 
+export async function deleteAdminLocation(locationId: number) {
+  const existing = await db.query.locations.findFirst({
+    where: eq(schema.locations.id, locationId),
+  });
+
+  if (!existing) {
+    throw new AdminServiceError(404, 'LOCATION_NOT_FOUND', `Location with ID ${locationId} not found`);
+  }
+
+  await db
+    .delete(schema.locations)
+    .where(eq(schema.locations.id, locationId));
+
+  return { id: locationId, name: existing.name };
+}
+
 // ----------------------------------------------------
 // 3. ADDONS CONFIGURATION & PRICE VERSIONING
 // ----------------------------------------------------
@@ -287,6 +304,56 @@ export async function getAdminSpecifications() {
   });
 }
 
+export async function createAdminOption(dto: CreateOptionDto) {
+  const item = await db.query.items.findFirst({
+    where: eq(schema.items.id, dto.itemId),
+  });
+
+  if (!item) {
+    throw new AdminServiceError(404, 'ITEM_NOT_FOUND', `Item with ID ${dto.itemId} not found`);
+  }
+
+  const [createdOption] = await db
+    .insert(schema.options)
+    .values({
+      itemId: dto.itemId,
+      brandName: dto.name,
+      slug: dto.slug,
+      specification: dto.description || '',
+    })
+    .returning();
+
+  const [createdPrice] = await db
+    .insert(schema.optionPrices)
+    .values({
+      optionId: createdOption.id,
+      priceDelta: (dto.priceDelta || 0).toFixed(2),
+    })
+    .returning();
+
+  return {
+    ...createdOption,
+    name: createdOption.brandName,
+    activePrice: createdPrice,
+    prices: [createdPrice],
+  };
+}
+
+export async function deleteAdminOption(optionId: number) {
+  const option = await db.query.options.findFirst({
+    where: eq(schema.options.id, optionId),
+  });
+
+  if (!option) {
+    throw new AdminServiceError(404, 'OPTION_NOT_FOUND', `Option with ID ${optionId} not found`);
+  }
+
+  await db.delete(schema.optionPrices).where(eq(schema.optionPrices.optionId, optionId));
+  await db.delete(schema.options).where(eq(schema.options.id, optionId));
+
+  return { id: optionId, name: option.brandName };
+}
+
 export async function updateAdminOptionPrice(optionId: number, dto: UpdateOptionPriceDto) {
   const option = await db.query.options.findFirst({
     where: eq(schema.options.id, optionId),
@@ -296,16 +363,28 @@ export async function updateAdminOptionPrice(optionId: number, dto: UpdateOption
     throw new AdminServiceError(404, 'OPTION_NOT_FOUND', `Option with ID ${optionId} not found`);
   }
 
-  // Update option prices in-place!
-  const [newPrice] = await db
-    .update(schema.optionPrices)
-    .set({
-      priceDelta: dto.priceDelta.toFixed(2),
-    })
-    .where(eq(schema.optionPrices.optionId, optionId))
-    .returning();
+  // Update option brandName if provided
+  if (dto.name) {
+    await db
+      .update(schema.options)
+      .set({ brandName: dto.name })
+      .where(eq(schema.options.id, optionId));
+  }
 
-  return newPrice;
+  // Update option prices in-place!
+  let newPrice = null;
+  if (dto.priceDelta !== undefined) {
+    const [p] = await db
+      .update(schema.optionPrices)
+      .set({
+        priceDelta: dto.priceDelta.toFixed(2),
+      })
+      .where(eq(schema.optionPrices.optionId, optionId))
+      .returning();
+    newPrice = p;
+  }
+
+  return { id: optionId, name: dto.name || option.brandName, newPrice };
 }
 
 export async function updateAdminPackageItem(packageItemId: number, dto: UpdatePackageItemDto) {

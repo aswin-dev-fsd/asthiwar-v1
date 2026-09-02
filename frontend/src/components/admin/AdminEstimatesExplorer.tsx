@@ -11,6 +11,7 @@ import {
   getAdminEstimateById,
   triggerEstimateQuotation,
 } from '../../services/adminApi';
+import { Modal } from '../common/Modal';
 
 function formatINR(amount: number | string | undefined | null): string {
   if (amount === undefined || amount === null) return '₹0';
@@ -208,27 +209,17 @@ export const AdminEstimatesExplorer: React.FC = () => {
       </div>
 
       {/* Estimate Snapshot Inspection Modal */}
-      {selectedEstimate && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="asthiwar-card max-w-2xl w-full bg-slate-900 border-amber-500/40 animate-fade-in max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div>
-                <h4 className="font-heading font-bold text-lg text-white">
-                  Estimate Snapshot: {selectedEstimate.estimateNumber}
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Immutable record captured on{' '}
-                  {new Date(selectedEstimate.createdAt).toLocaleDateString('en-IN')}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedEstimate(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
+      <Modal
+        isOpen={Boolean(selectedEstimate)}
+        onClose={() => setSelectedEstimate(null)}
+        title={`Estimate Snapshot: ${selectedEstimate?.estimateNumber}`}
+        subtitle={`Immutable record captured on ${
+          selectedEstimate ? new Date(selectedEstimate.createdAt).toLocaleDateString('en-IN') : ''
+        }`}
+        maxWidth="max-w-2xl"
+      >
+        {selectedEstimate && (
+          <div className="space-y-4">
             {/* Financial Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
               <div>
@@ -311,8 +302,8 @@ export const AdminEstimatesExplorer: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

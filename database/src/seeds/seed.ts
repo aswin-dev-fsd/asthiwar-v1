@@ -344,12 +344,15 @@ async function seedSpecifications(
   }));
 
   const existingOptions = await db.select().from(options);
-  const existingOptionKeys = new Set(existingOptions.map(o => `${o.itemId}_${o.slug}`));
-  const newOptions = optionInserts.filter(o => !existingOptionKeys.has(`${o.itemId}_${o.slug}`));
-  if (newOptions.length > 0) {
-    await db.insert(options).values(newOptions).onConflictDoNothing();
+  for (const o of optionInserts) {
+    const existing = existingOptions.find(ex => ex.itemId === o.itemId && ex.slug === o.slug);
+    if (existing) {
+      await db.update(options).set({ brandName: o.brandName, isDefault: o.isDefault }).where(eq(options.id, existing.id));
+    } else {
+      await db.insert(options).values(o);
+    }
   }
-  log('Options', newOptions.length);
+  log('Options', optionInserts.length);
 
   // Fetch option IDs
   const optionRows = await db.select().from(options);
@@ -694,7 +697,7 @@ async function seedAddons() {
       pricingUnit: 'per_litre', defaultQuantity: '5000', minQuantity: '1000', maxQuantity: '20000', sortOrder: 3,
     },
     {
-      slug: 'compound_wall', name: 'Compound Wall (up to 5\'6")',
+      slug: 'compound_wall', name: 'Compound Wall (up to 5\'6" Height)',
       description: 'Perimeter compound wall. Running feet entered by customer.',
       pricingUnit: 'per_rft', defaultQuantity: '50', minQuantity: '10', maxQuantity: '500', sortOrder: 4,
     },
@@ -755,7 +758,12 @@ async function seedAddons() {
     },
   ];
 
-  await db.insert(addons).values(addonDefs).onConflictDoNothing();
+  for (const a of addonDefs) {
+    await db.insert(addons).values(a).onConflictDoUpdate({
+      target: addons.slug,
+      set: { name: a.name, description: a.description, pricingUnit: a.pricingUnit },
+    });
+  }
   log('Add-Ons', addonDefs.length);
 
   // Fetch addon IDs
@@ -799,9 +807,10 @@ async function seedAddons() {
     { addonSlug: 'solar_water_heater', variantName: '250 Litres', variantSlug: '250l', packageTier: 'all', price: '60000.00' },
     // 12. Cool Roof Tiles: ₹170/sqft
     { addonSlug: 'cool_roof_tiles', variantName: '1\'x1\' White with Epoxy', variantSlug: 'white_epoxy', packageTier: 'all', price: '170.00' },
-    // 13. Motor Automation: ₹12,000 (bore), ₹12,000 (corporation)
+    // 13. Motor Automation: ₹12,000 (bore), ₹12,000 (corporation), ₹24,000 (both)
     { addonSlug: 'motor_automation', variantName: 'Bore Water OHT',        variantSlug: 'bore',        packageTier: 'all', price: '12000.00' },
-    { addonSlug: 'motor_automation', variantName: 'Corporation Water OHT', variantSlug: 'corporation', packageTier: 'all', price: '12000.00' },
+    { addonSlug: 'motor_automation', variantName: 'Corporation Water OHT', variantSlug: 'corporation', packageTier: 'all', price: '24000.00' },
+    { addonSlug: 'motor_automation', variantName: 'Both (Bore & Corporation Water OHT)', variantSlug: 'both', packageTier: 'all', price: '24000.00' },
     // 14. Pressure Pump: ₹50,000
     { addonSlug: 'pressure_pump', variantName: 'Standard Pump', variantSlug: 'standard', packageTier: 'all', price: '50000.00' },
     // 15. Waste Water Recycling: TBD — zero placeholder (rule 3: never invent prices)

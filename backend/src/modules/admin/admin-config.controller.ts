@@ -6,11 +6,14 @@ import {
   getAdminLocations,
   createAdminLocation,
   updateAdminLocation,
+  deleteAdminLocation,
   getAdminAddons,
   updateAdminAddonPrice,
   updateAdminAddonMetadata,
   getAdminSpecifications,
+  createAdminOption,
   updateAdminOptionPrice,
+  deleteAdminOption,
   updateAdminPackageItem,
   getAdminMilestones,
   updateAdminMilestones,
@@ -22,6 +25,7 @@ import {
   UpdateLocationDto,
   UpdateAddonPriceDto,
   UpdateAddonMetadataDto,
+  CreateOptionDto,
   UpdateOptionPriceDto,
   UpdatePackageItemDto,
   UpdateMilestonesDto,
@@ -170,6 +174,42 @@ export async function updateLocationController(req: Request, res: Response, next
   }
 }
 
+export async function deleteLocationController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const locationId = parseInt(req.params.id as string, 10);
+    const result = await deleteAdminLocation(locationId);
+
+    logAuditEvent({
+      eventType: 'ADMIN_MUTATION',
+      action: 'DELETE_LOCATION',
+      severity: 'HIGH',
+      actorType: 'ADMIN',
+      actorId: (req as any).user?.email || (req as any).user?.id,
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+      metadata: { locationId },
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    }).catch(() => {});
+
+    res.json({
+      success: true,
+      message: `Location '${result.name}' deleted successfully`,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof AdminServiceError) {
+      res.status(error.statusCode).json({
+        success: false,
+        error: { code: error.code, message: error.message },
+      });
+      return;
+    }
+    next(error);
+  }
+}
+
 // ----------------------------------------------------
 // ADDONS CONTROLLER
 // ----------------------------------------------------
@@ -243,6 +283,48 @@ export async function getSpecificationsController(req: Request, res: Response, n
       data: specs,
     });
   } catch (error) {
+    next(error);
+  }
+}
+
+export async function createOptionController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const dto = req.body as CreateOptionDto;
+    const created = await createAdminOption(dto);
+    res.status(201).json({
+      success: true,
+      message: 'Brand option created successfully',
+      data: created,
+    });
+  } catch (error) {
+    if (error instanceof AdminServiceError) {
+      res.status(error.statusCode).json({
+        success: false,
+        error: { code: error.code, message: error.message },
+      });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function deleteOptionController(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const optionId = parseInt(req.params.id as string, 10);
+    const result = await deleteAdminOption(optionId);
+    res.json({
+      success: true,
+      message: `Brand option '${result.name}' deleted successfully`,
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof AdminServiceError) {
+      res.status(error.statusCode).json({
+        success: false,
+        error: { code: error.code, message: error.message },
+      });
+      return;
+    }
     next(error);
   }
 }

@@ -110,9 +110,11 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
             <span className="flex items-center gap-1.5">
               <Ruler className="w-4 h-4 text-amber-400" /> Total Plot Area <span className="text-red-400">*</span>
             </span>
-            {formData.plotAreaUnit !== 'sqft' && (
+            {formData.plotArea > 0 && (
               <span className="text-xs text-amber-400 font-semibold">
-                ≈ {plotSqft.toLocaleString('en-IN')} Sq.Ft
+                {formData.plotAreaUnit === 'sqft'
+                  ? `≈ ${(plotSqft / 435.6).toFixed(2).replace(/\.00$/, '')} Cents`
+                  : `≈ ${plotSqft.toLocaleString('en-IN')} Sq.Ft`}
               </span>
             )}
           </label>
@@ -316,10 +318,10 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
           </div>
         </div>
 
-        {/* Other Areas (Car Parking, Head Room, Compound Wall, Gate) */}
+        {/* Additional Building Areas (Car Parking, Head Room) */}
         <div className="pt-4 border-t border-slate-800">
           <label className="form-label flex items-center gap-1.5 mb-3">
-            <Car className="w-4 h-4 text-amber-400" /> Additional Areas (Sq.Ft) <span className="text-red-400">*</span>
+            <Car className="w-4 h-4 text-amber-400" /> Additional Building Areas (Sq.Ft) <span className="text-red-400">*</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -346,32 +348,6 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
                   placeholder="e.g. 100"
                />
             </div>
-            <div>
-               <span className="block text-xs font-semibold text-slate-400 mb-1.5">Gate Area (Sq.Ft)</span>
-               <input
-                  type="number"
-                  min={0}
-                  step={10}
-                  className="form-input text-sm"
-                  value={formData.gateAreaSqft || ''}
-                  onChange={(e) => onChange({ gateAreaSqft: parseFloat(e.target.value) || 0 })}
-                  placeholder="e.g. 80"
-               />
-            </div>
-            <div>
-               <div className="flex justify-between items-end mb-1.5">
-                  <span className="block text-xs font-semibold text-slate-400">Compound Wall (R.Ft)</span>
-               </div>
-               <input
-                  type="number"
-                  min={0}
-                  step={10}
-                  className="form-input text-sm"
-                  value={formData.compoundWallPerimeter || ''}
-                  onChange={(e) => onChange({ compoundWallPerimeter: parseFloat(e.target.value) || 0 })}
-                  placeholder="e.g. 120"
-               />
-            </div>
           </div>
         </div>
 
@@ -383,11 +359,11 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
           <button
             type="button"
             onClick={onNext}
-            disabled={!formData.plotArea || formData.plotArea <= 0 || isFootprintExceeded || totalBuiltupArea <= 0 || formData.carParkingAreaSqft < 0 || formData.headRoomAreaSqft < 0 || formData.compoundWallPerimeter < 0 || formData.gateAreaSqft < 0}
-            className="btn btn-primary text-xs"
+            disabled={!formData.plotArea || formData.plotArea <= 0 || isFootprintExceeded || totalBuiltupArea <= 0 || formData.carParkingAreaSqft < 0 || formData.headRoomAreaSqft < 0}
+            className="btn btn-primary text-xs py-2.5 px-6"
           >
-            <span>Select Package</span>
-            <ArrowRight className="w-4 h-4 ml-1.5" />
+            <span>Continue to Specifications</span>
+            <ArrowRight className="w-4 h-4 ml-1" />
           </button>
         </div>
       </div>

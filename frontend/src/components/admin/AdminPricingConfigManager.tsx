@@ -9,6 +9,7 @@ import {
   CalendarClock,
   RotateCcw,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import {
   getAdminPackageConfigs,
@@ -18,10 +19,16 @@ import {
   getAdminLocationConfigs,
   updateLocationMultiplier,
   createAdminLocation,
+  deleteAdminLocation,
   getAdminMilestoneConfigs,
   updateAdminMilestones,
+  getAdminSpecificationConfigs,
+  createAdminOption,
+  updateAdminOptionPrice,
+  deleteAdminOption,
 } from '../../services/adminApi';
 import { MilestoneStageConfig } from '../../types';
+import { Modal } from '../common/Modal';
 
 const DEFAULT_MILESTONE_STAGES: MilestoneStageConfig[] = [
   { stageNumber: 1, stageName: 'Design & Approvals', percentage: 3, keyDeliverables: 'Soil test, floor plan, structural drawing, DTCP approval assistance', isActive: true },
@@ -37,21 +44,32 @@ const DEFAULT_MILESTONE_STAGES: MilestoneStageConfig[] = [
 ];
 
 export const AdminPricingConfigManager: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'packages' | 'addons' | 'locations' | 'milestones'>('packages');
+  const [activeTab, setActiveTab] = useState<'packages' | 'brands' | 'addons' | 'locations' | 'milestones'>('packages');
   const [packages, setPackages] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<MilestoneStageConfig[]>([]);
+  const [specifications, setSpecifications] = useState<any[]>([]);
+  const [activeCategorySlug, setActiveCategorySlug] = useState<string>('structure');
+
   const [loading, setLoading] = useState<boolean>(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | number | null>(null);
 
-  // Edit states for packages
+  // Edit states for packages, addons, locations, specifications
   const [pkgEdit, setPkgEdit] = useState<Record<string, { std: number; vol: number; threshold: number; reason: string }>>({});
-  // Edit states for addon variants
   const [addonEdit, setAddonEdit] = useState<Record<string, { price: number; reason: string }>>({});
-  // Edit states for locations
   const [locEdit, setLocEdit] = useState<Record<number, string>>({});
+  const [specEdit, setSpecEdit] = useState<Record<number, { name: string; priceDelta: number }>>({});
+
+  // Add Option Modal state
+  const [showAddOptionModal, setShowAddOptionModal] = useState<boolean>(false);
+  const [targetItem, setTargetItem] = useState<{ id: number; name: string } | null>(null);
+  const [newOptName, setNewOptName] = useState<string>('');
+  const [newOptSlug, setNewOptSlug] = useState<string>('');
+  const [newOptPriceDelta, setNewOptPriceDelta] = useState<string>('0');
+  const [newOptDescription, setNewOptDescription] = useState<string>('');
+  const [isCreatingOption, setIsCreatingOption] = useState<boolean>(false);
 
   // New location form state
   const [showAddLocation, setShowAddLocation] = useState<boolean>(false);
@@ -67,11 +85,16 @@ export const AdminPricingConfigManager: React.FC = () => {
       getAdminAddonConfigs(),
       getAdminLocationConfigs(),
       getAdminMilestoneConfigs(),
+      getAdminSpecificationConfigs(),
     ])
-      .then(([pkgs, adds, locs, ms]) => {
+      .then(([pkgs, adds, locs, ms, specs]) => {
         setPackages(pkgs);
         setAddons(adds);
         setLocations(locs);
+        setSpecifications(specs || []);
+        if (specs && specs.length > 0 && !activeCategorySlug) {
+          setActiveCategorySlug(specs[0].slug);
+        }
         setMilestones(
           ms && ms.length > 0
             ? ms.map((m: any) => ({
@@ -113,18 +136,26 @@ export const AdminPricingConfigManager: React.FC = () => {
         });
         setAddonEdit(addMap);
 
-        const locMap: any = {};
+        const lMap: any = {};
         locs.forEach((l) => {
-          locMap[l.id] = Number(l.priceMultiplier ?? 1.0);
+          lMap[l.id] = String(l.priceMultiplier);
         });
-        setLocEdit(locMap);
+        setLocEdit(lMap);
 
-        setLoading(false);
+        // Initialize specEdit map
+        const sMap: Record<number, { name: string; priceDelta: number }> = {};
+        specs?.forEach((cat: any) => {
+          cat.items?.forEach((item: any) => {
+            item.options?.forEach((opt: any) => {
+              const pDelta = opt.activePrice?.priceDelta ?? 0;
+              sMap[opt.id] = { name: opt.brandName || opt.name || '', priceDelta: Number(pDelta) };
+            });
+          });
+        });
+        setSpecEdit(sMap);
       })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch((err) => console.error('Failed to load admin configs:', err))
+      .finally(() => setLoading(false));
   };
 
   const handleMilestoneChange = (index: number, field: keyof MilestoneStageConfig, value: any) => {
@@ -234,6 +265,94 @@ export const AdminPricingConfigManager: React.FC = () => {
     }
   };
 
+  const handleDeleteLocation = async (id: number, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete city "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    setSavingId(`delete-${id}`);
+    try {
+      await deleteAdminLocation(id);
+      setSuccessMessage(`Location "${name}" deleted successfully!`);
+      fetchConfigs();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete location');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleSaveOption = async (optionId: number) => {
+    const editData = specEdit[optionId];
+    if (!editData) return;
+    setSavingId(`opt-${optionId}`);
+    try {
+      await updateAdminOptionPrice(optionId, {
+        name: editData.name,
+        priceDelta: editData.priceDelta,
+      });
+      setSuccessMessage(`Brand option updated successfully!`);
+      fetchConfigs();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to update brand option');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDeleteOption = async (optionId: number, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete brand option "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    setSavingId(`delete-opt-${optionId}`);
+    try {
+      await deleteAdminOption(optionId);
+      setSuccessMessage(`Brand option "${name}" deleted successfully!`);
+      fetchConfigs();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete brand option');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleCreateOption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetItem) return;
+    if (!newOptName.trim()) {
+      alert('Please enter a brand option name.');
+      return;
+    }
+    const slug = (newOptSlug.trim() || newOptName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')).replace(/^_+|_+$/g, '');
+    const pDelta = parseFloat(newOptPriceDelta) || 0;
+
+    setIsCreatingOption(true);
+    try {
+      await createAdminOption({
+        itemId: targetItem.id,
+        name: newOptName.trim(),
+        slug,
+        description: newOptDescription.trim(),
+        priceDelta: pDelta,
+      });
+      setSuccessMessage(`Brand option "${newOptName.trim()}" added successfully!`);
+      setShowAddOptionModal(false);
+      setTargetItem(null);
+      setNewOptName('');
+      setNewOptSlug('');
+      setNewOptPriceDelta('0');
+      setNewOptDescription('');
+      fetchConfigs();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to create brand option');
+    } finally {
+      setIsCreatingOption(false);
+    }
+  };
+
   const handleCreateLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLocName.trim()) {
@@ -298,6 +417,16 @@ export const AdminPricingConfigManager: React.FC = () => {
             Package Rates ({packages.length})
           </button>
           <button
+            onClick={() => setActiveTab('brands')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeTab === 'brands'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Brand Customisation ({specifications.length})
+          </button>
+          <button
             onClick={() => setActiveTab('addons')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'addons'
@@ -360,7 +489,7 @@ export const AdminPricingConfigManager: React.FC = () => {
                   <div className="form-group mb-0">
                     <label className="form-label text-[11px] h-9 flex flex-col justify-end pb-1">
                       <span className="text-slate-200">Standard Rate</span>
-                      <span className="text-[10px] text-slate-500 font-normal">≤ {edit.threshold.toLocaleString('en-IN')} sq.ft</span>
+                      <span className="text-[10px] text-slate-400 font-normal">≤ {edit.threshold.toLocaleString('en-IN')} sq.ft</span>
                     </label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
@@ -380,13 +509,14 @@ export const AdminPricingConfigManager: React.FC = () => {
 
                   <div className="form-group mb-0">
                     <label className="form-label text-[11px] h-9 flex flex-col justify-end pb-1">
-                      <span className="text-slate-200">Volume Threshold</span>
-                      <span className="text-[10px] text-amber-400/80 font-normal">Discount Trigger</span>
+                      <span className="text-amber-400 font-semibold">Volume Threshold</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Discount Trigger</span>
                     </label>
                     <div className="relative">
                       <input
                         type="number"
-                        className="form-input pl-3.5 pr-11 font-bold text-amber-400"
+                        step="50"
+                        className="form-input pl-3 pr-9 font-bold text-amber-400"
                         value={edit.threshold}
                         onChange={(e) =>
                           setPkgEdit({
@@ -460,7 +590,164 @@ export const AdminPricingConfigManager: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 2: 15 Add-Ons Pricing */}
+      {/* Tab 2: Brand Customisation */}
+      {activeTab === 'brands' && (
+        <div className="space-y-6">
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-800">
+            {specifications.map((cat: any) => {
+              const isActive = activeCategorySlug === cat.slug;
+              return (
+                <button
+                  key={cat.slug}
+                  onClick={() => setActiveCategorySlug(cat.slug)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
+                      : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:text-slate-200'
+                  }`}
+                >
+                  {cat.name} ({cat.items?.length || 0})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Items in Active Category */}
+          {(() => {
+            const activeCat = specifications.find((c: any) => c.slug === activeCategorySlug) || specifications[0];
+            if (!activeCat) return <div className="text-slate-400 text-xs py-8 text-center">No specification categories found.</div>;
+
+            return (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading font-bold text-lg text-white flex items-center gap-2">
+                    <span className="text-amber-400">{activeCat.name}</span>
+                    <span className="text-xs font-normal text-slate-400">({activeCat.items?.length || 0} items)</span>
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  {activeCat.items?.map((item: any) => (
+                    <div key={item.id} className="asthiwar-card p-5 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-heading font-bold text-base text-white">{item.name}</h4>
+                          <span className="badge badge-gold uppercase text-[10px]">{item.unit}</span>
+                          {item.isCustomizable && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">
+                              Customizable
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetItem({ id: item.id, name: item.name });
+                            setShowAddOptionModal(true);
+                          }}
+                          className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Add Brand Option</span>
+                        </button>
+                      </div>
+
+                      {/* Options Table / List */}
+                      {item.options && item.options.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="text-[11px] font-semibold text-slate-400 grid grid-cols-12 gap-3 px-2">
+                            <span className="col-span-5">Brand / Option Name</span>
+                            <span className="col-span-4">Upgrade Delta (₹/{item.unit})</span>
+                            <span className="col-span-3 text-right">Actions</span>
+                          </div>
+
+                          {item.options.map((opt: any) => {
+                            const edit = specEdit[opt.id] || { name: opt.brandName || opt.name || '', priceDelta: Number(opt.activePrice?.priceDelta || 0) };
+                            const isSavingOpt = savingId === `opt-${opt.id}`;
+                            const isDeletingOpt = savingId === `delete-opt-${opt.id}`;
+
+                            return (
+                              <div key={opt.id} className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60 grid grid-cols-12 gap-3 items-center">
+                                <div className="col-span-5">
+                                  <input
+                                    type="text"
+                                    className="form-input text-xs font-semibold text-white"
+                                    value={edit.name}
+                                    onChange={(e) =>
+                                      setSpecEdit({
+                                        ...specEdit,
+                                        [opt.id]: { ...edit, name: e.target.value },
+                                      })
+                                    }
+                                  />
+                                </div>
+
+                                <div className="col-span-4 relative">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                                  <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    className="form-input pl-7 text-xs font-bold text-amber-400"
+                                    value={edit.priceDelta}
+                                    onChange={(e) =>
+                                      setSpecEdit({
+                                        ...specEdit,
+                                        [opt.id]: { ...edit, priceDelta: parseFloat(e.target.value) || 0 },
+                                      })
+                                    }
+                                  />
+                                </div>
+
+                                <div className="col-span-3 flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveOption(opt.id)}
+                                    disabled={isSavingOpt}
+                                    className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1"
+                                    title="Save brand changes"
+                                  >
+                                    {isSavingOpt ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Save className="w-3.5 h-3.5" />
+                                    )}
+                                    <span className="hidden sm:inline">Save</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOption(opt.id, opt.name)}
+                                    disabled={isDeletingOpt}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                    title={`Delete ${opt.name}`}
+                                  >
+                                    {isDeletingOpt ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-slate-500 text-xs italic py-2">
+                          No brand options created yet for this item. Click "+ Add Brand Option" above.
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Tab 3: 15 Add-Ons Pricing */}
       {activeTab === 'addons' && (
         <div className="space-y-4">
           {addons.map((addon: any) => (
@@ -643,7 +930,22 @@ export const AdminPricingConfigManager: React.FC = () => {
                       <MapPin className="w-4 h-4 text-amber-400" />
                       <h4 className="font-heading font-bold text-base text-white">{loc.name}</h4>
                     </div>
-                    <span className="badge badge-gold">{multiplier}x Factor</span>
+                    <div className="flex items-center gap-2">
+                      <span className="badge badge-gold">{multiplier}x Factor</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLocation(loc.id, loc.name)}
+                        disabled={savingId === `delete-${loc.id}`}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title={`Delete ${loc.name}`}
+                      >
+                        {savingId === `delete-${loc.id}` ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -848,6 +1150,98 @@ export const AdminPricingConfigManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Popup Form for Adding Brand Option */}
+      <Modal
+        isOpen={showAddOptionModal && Boolean(targetItem)}
+        onClose={() => {
+          setShowAddOptionModal(false);
+          setTargetItem(null);
+        }}
+        title="Add Brand Option"
+        subtitle={targetItem?.name}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleCreateOption} className="space-y-4">
+          <div className="form-group">
+            <label className="form-label text-xs">Brand / Option Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. UltraTech Super / TATA Tiscon 550D"
+              className="form-input text-xs font-semibold text-white"
+              value={newOptName}
+              onChange={(e) => {
+                setNewOptName(e.target.value);
+                if (!newOptSlug) {
+                  setNewOptSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+                }
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="form-group">
+              <label className="form-label text-xs">Option Slug</label>
+              <input
+                type="text"
+                placeholder="e.g. ultratech_super"
+                className="form-input text-xs"
+                value={newOptSlug}
+                onChange={(e) => setNewOptSlug(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label text-xs">Delta Rate (₹/unit)</label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                placeholder="0"
+                className="form-input text-xs font-bold text-amber-400"
+                value={newOptPriceDelta}
+                onChange={(e) => setNewOptPriceDelta(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label text-xs">Description (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. Premium Grade Fe 550D TMT Steel"
+              className="form-input text-xs"
+              value={newOptDescription}
+              onChange={(e) => setNewOptDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddOptionModal(false);
+                setTargetItem(null);
+              }}
+              className="btn btn-secondary text-xs py-2 px-4"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isCreatingOption}
+              className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
+            >
+              {isCreatingOption ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              <span>Create Brand Option</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

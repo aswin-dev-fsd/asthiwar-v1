@@ -15,6 +15,7 @@ import {
   updateAdminEnquiry,
   triggerLeadAlert,
 } from '../../services/adminApi';
+import { Modal } from '../common/Modal';
 
 const STATUS_FILTERS = [
   { label: 'ALL', value: 'ALL' },
@@ -232,21 +233,15 @@ export const AdminEnquiriesManager: React.FC = () => {
       </div>
 
       {/* Enquiry Detail Modal */}
-      {selectedEnquiry && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="asthiwar-card max-w-lg w-full bg-slate-900 border-amber-500/40 animate-fade-in space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h4 className="font-heading font-bold text-base text-white">
-                Consultation Lead Details
-              </h4>
-              <button
-                onClick={() => setSelectedEnquiry(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
+      <Modal
+        isOpen={Boolean(selectedEnquiry)}
+        onClose={() => setSelectedEnquiry(null)}
+        title="Consultation Lead Details"
+        subtitle={selectedEnquiry?.fullName}
+        maxWidth="max-w-lg"
+      >
+        {selectedEnquiry && (
+          <div className="space-y-4">
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div>
@@ -298,8 +293,8 @@ export const AdminEnquiriesManager: React.FC = () => {
               Close
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };
