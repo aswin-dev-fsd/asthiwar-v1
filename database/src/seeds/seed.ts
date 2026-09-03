@@ -75,7 +75,7 @@ async function seedPackages() {
     {
       slug: 'premium',
       name: 'Premium Package',
-      tagline: 'Best Value / Most Popular',
+      tagline: 'Best Value',
       description: 'High-spec modern residence — Jaquar fittings, Ultratech cement, SS railings.',
       colorTheme: '#8B5CF6',
       sortOrder: 3,

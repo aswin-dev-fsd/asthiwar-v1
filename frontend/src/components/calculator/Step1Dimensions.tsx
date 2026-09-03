@@ -335,6 +335,9 @@ export const Step1Dimensions: React.FC<Step1Props> = ({
                   onChange={(e) => onChange({ carParkingAreaSqft: parseFloat(e.target.value) || 0 })}
                   placeholder="e.g. 200"
                />
+               <p className="text-[11px] text-slate-400 mt-1.5 leading-tight">
+                 <span className="text-amber-400/90 font-medium">Note:</span> Only if parking is separate from the floor built-up area above.
+               </p>
             </div>
             <div>
                <span className="block text-xs font-semibold text-slate-400 mb-1.5">Head Room Area (Sq.Ft)</span>

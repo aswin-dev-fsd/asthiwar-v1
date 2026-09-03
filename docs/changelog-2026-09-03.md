@@ -71,48 +71,46 @@ Integrated the formal 11 Standard Construction Exclusions and Client-Scope items
 
 ### Backend PDF Engine (`pdf.service.ts`)
 - Added a 2-column **STANDARD EXCLUSIONS & CLIENT SCOPE (Out of Scope for Civil Contract)** section positioned above the signature block.
-- Scaled font sizing to keep the generated PDF strictly within a clean professional multi-page layout.
+- **PDF Layout Optimization & Ghost Page Fix:**
+  - Set `doc.page.margins.bottom = 0` during footer rendering to eliminate PDFKit ghost page creation.
+  - Adjusted milestone row height (17pt) and typography to ensure complete PDF estimates strictly format into clean 3-page quotation contracts.
 
 ---
 
-## 3. Dynamic Add-On Rules & Weathering Logic
+## 3. Dynamic Add-On Rules & Calculator Clarifications
 
 ### Backend Calculator Engine (`calculator.service.ts`)
 - Implemented dynamic package-level add-on rules for **Roof Weathering / Cool Roof Tiles**:
   - Automatically complimentary (₹0) for **Premium** and **Luxury** packages.
   - Automatically waived (₹0) for **Basic / Standard** packages when terrace quantity exceeds 2,000 sq.ft.
 
+### Frontend Dimensions Note (`Step1Dimensions.tsx`)
+- Added a clarifying microcopy note under **Car Parking Area (Sq.Ft)**:
+  `Note: Only if parking is separate from the floor built-up area above.`
+
 ---
 
-## 4. Master Data Seed & Database Sync
+## 4. Package Tagline Cleanup & Master Data Seed
 
-### Overview
-Synchronized `database/src/seeds/seed.ts` with the latest v4/v5 construction package specifications, extended add-on variant pricing, and added automatic milestone phase seeding.
+### Premium Package Tagline
+- Updated the Premium package tagline from `"Best Value / Most Popular"` to `"Best Value"` across:
+  - Master Seed (`database/src/seeds/seed.ts`)
+  - Live Neon PostgreSQL Database (`packages` table)
+  - Public Calculator UI (`Step3Packages.tsx`)
 
-### Changes in `seed.ts`
+### Master Seed (`database/src/seeds/seed.ts`) Sync
 - **Add-On Pricing Sync:**
-  - Added Motor Automation variants: Bore Water OHT (₹12,000), Corporation Water OHT (₹12,000), Both (₹24,000).
-  - Added Pressure Pump variants: 3 Bathrooms without body shower (₹57,500), 4+ Bathrooms without body shower (₹71,000), 1 Body + 2 Normal (₹82,800), 3 Bathrooms with body shower (₹1,07,000).
-  - Added Water Softener variant: AO Smith (₹1,05,000).
-  - Implemented update-or-insert loop for idempotency.
+  - Motor Automation: Bore Water OHT (₹12,000), Corporation Water OHT (₹12,000), Both (₹24,000).
+  - Pressure Pump: 4 variants (₹57,500 to ₹1,07,000).
+  - Water Softener: AO Smith (₹1,05,000).
 - **Milestone Stages Seeding:**
-  - Added `seedMilestones()` populating all 10 standard construction milestones with percentage shares and deliverables using `onConflictDoUpdate`.
+  - `seedMilestones()` populating all 10 standard construction milestones with percentage shares and deliverables using `onConflictDoUpdate`.
 
 ---
 
-## 5. Calculator UI Polish & Layout Enhancements
-
-### Frontend Changes
-- **`Step4Addons.tsx`**:
-  - Adjusted add-on category grouping and styling to support multi-variant pricing tiers.
-- **`Step4Customizations.tsx`**:
-  - Refined layout, option badges, and package-specific pricing labels.
-
----
-
-## 6. Verification & Testing
+## 5. Verification & Testing
 
 - **TypeScript Typecheck (`npx tsc --noEmit`)**: Passed with 0 errors across frontend and backend.
 - **Database Schema Validation**: Verified cascade constraints and query safety.
 - **Admin Dashboard Integration**: Tested brand option creation, package-level editing, and deletion flows.
-- **Vite & Backend Dev Servers**: Verified active running state on ports 5173 / 3000 / 4000.
+- **Live Servers**: Verified active development servers on ports 5173 / 3000 / 4000.
