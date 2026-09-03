@@ -41,7 +41,22 @@ Completely overhauled the brand customizations pricing model and CRUD pipeline i
 
 ---
 
-## 2. 11 Standard Exclusions & Client Scope (Transparency & PDF Contract)
+## 2. Automatic CRM Lead Capture & Enquiry Deduplication
+
+### Overview
+Automated lead generation into the Admin CRM whenever an authoritative estimate is calculated in Step 5, and implemented upsert/deduplication logic when booking a site consultation.
+
+### Backend Changes
+- **`calculator.service.ts`**:
+  - Automatically inserts an `enquiries` lead record linked to the newly generated `estimateId` with project specifications, location, contact details, and formatted commercial value in requirement notes.
+- **`enquiries.controller.ts`**:
+  - Added duplicate detection matching by `estimateNumber` or `estimateId`. If an enquiry was already auto-generated during estimation, the consultation form submission gracefully updates the existing record with preferred contact time and custom notes rather than inserting duplicate leads.
+- **`database/src/scripts/backfill_leads.ts`**:
+  - Created automated utility script to backfill CRM lead records for historical estimates.
+
+---
+
+## 3. 11 Standard Exclusions & Client Scope (Transparency & PDF Contract)
 
 ### Overview
 Integrated the formal 11 Standard Construction Exclusions and Client-Scope items across both the client-facing Estimate Report (Step 5) and the downloadable formal PDF estimate summary.
@@ -68,7 +83,7 @@ Integrated the formal 11 Standard Construction Exclusions and Client-Scope items
 
 ---
 
-## 3. Dynamic Add-On Rules & Calculator Clarifications
+## 4. Dynamic Add-On Rules & Calculator Clarifications
 
 ### Backend Calculator Engine (`calculator.service.ts`)
 - Implemented dynamic package-level add-on rules for **Roof Weathering / Cool Roof Tiles**:
@@ -81,7 +96,7 @@ Integrated the formal 11 Standard Construction Exclusions and Client-Scope items
 
 ---
 
-## 4. Package Tagline Cleanup & Master Data Seed
+## 5. Package Tagline Cleanup & Master Data Seed
 
 ### Premium Package Tagline
 - Updated the Premium package tagline from `"Best Value / Most Popular"` to `"Best Value"` across:
@@ -99,7 +114,7 @@ Integrated the formal 11 Standard Construction Exclusions and Client-Scope items
 
 ---
 
-## 5. Verification & Testing
+## 6. Verification & Testing
 
 - **TypeScript Typecheck (`npx tsc --noEmit`)**: Passed with 0 errors across frontend and backend.
 - **Database Schema Validation**: Verified cascade constraints and query safety.

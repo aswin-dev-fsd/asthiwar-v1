@@ -12,6 +12,7 @@ import {
   estimates,
   estimateItems,
   estimateAddons,
+  enquiries,
   milestoneStages,
   schema,
   eq,
@@ -549,6 +550,19 @@ export async function calculateEstimate(
         }))
       );
     }
+
+    // Auto-create CRM Lead Enquiry for this authoritative estimate
+    await db.insert(enquiries).values({
+      estimateId: insertedEstimate.id,
+      estimateNumber: estimateNumber,
+      fullName: input.customerName,
+      phone: input.customerPhone,
+      email: input.customerEmail ?? '',
+      plotLocation: input.plotLocation,
+      preferredContactTime: 'Anytime',
+      requirementNotes: `Generated estimate for ${pkg.name} (${totalBuiltupAreaSqft.toFixed(0)} sq.ft, ${input.floorCount === 0 ? 'Ground Floor' : `G+${input.floorCount}`}) in ${input.plotLocation}. Total: ₹${totalProjectCost.toLocaleString('en-IN')}`,
+      status: 'NEW',
+    });
   }
 
   return result;
