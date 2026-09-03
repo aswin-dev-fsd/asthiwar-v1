@@ -143,12 +143,18 @@ export const Step4Customizations: React.FC<Step4Props> = ({
                           <span className="text-xs font-bold">{opt.brandName}</span>
                           {isSelected && <Check className="w-3.5 h-3.5 text-amber-400" />}
                         </div>
-                        <div className="text-[11px] font-semibold text-amber-400">
-                          {opt.priceDelta > 0 
-                            ? `+₹${opt.priceDelta.toLocaleString('en-IN')}${item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'}` 
-                            : opt.priceDelta < 0 
-                              ? `-₹${Math.abs(opt.priceDelta).toLocaleString('en-IN')}${item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'}` 
-                              : 'Included'}
+                        <div className="text-[11px] font-semibold">
+                          {opt.priceDelta > 0 ? (
+                            <span className="text-amber-400">
+                              +₹{opt.priceDelta.toLocaleString('en-IN')}{item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'}
+                            </span>
+                          ) : opt.priceDelta < 0 ? (
+                            <span className="text-emerald-400 font-bold">
+                              −₹{Math.abs(opt.priceDelta).toLocaleString('en-IN')}{item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'} (Credit)
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold">✓ Included</span>
+                          )}
                         </div>
                       </div>
                     );

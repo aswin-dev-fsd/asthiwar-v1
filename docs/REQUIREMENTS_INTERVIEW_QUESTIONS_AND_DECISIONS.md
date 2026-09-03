@@ -106,3 +106,29 @@ This document records all architectural questions, multiple-choice options, reco
 | **Engineering Notes (Add-Ons)** | Displayed prominently in amber callout boxes (`💡 Note: ...`) on UI add-on cards for OHT (2500L), Septic Tank (6000L), Sump (6000L), Main Gate (60/120/24 sq.ft), Solar, and Heat Pump. |
 | **Volume Discount Threshold** | Fully dynamic and editable via Admin Pricing Config Manager (`volume_discount_threshold_sqft` defaults to 3,500 sq.ft). |
 | **Milestone Payment Schedule** | 10 distinct phases totaling exactly 100%, populated in `milestone_stages` table and rendered on PDF / Step 5 review. |
+
+---
+
+## Question 5: Unified Master Brand Catalog with Top Package Selectors (Session 2 & 3)
+
+### Question
+**How should Brand Pricing, Package Inclusions, and Save Operations be handled in the Admin Portal for maximum simplicity and zero math errors?**
+
+### Confirmed User Decision
+* **Selected:** **Unified Master Catalog with Top Package Selectors & Atomic Item Save**
+* **Business Rule & UI Architecture:**
+  1. **Top Package Selectors per Item Card:** Each item card features 4 dropdown selectors:
+     - `Basic Default: [Select Brand ▼]`
+     - `Standard Default: [Select Brand ▼]`
+     - `Premium Default: [Select Brand ▼]`
+     - `Luxury Default: [Select Brand ▼]`
+     *(Foolproof: A package can never be left without an assigned default).*
+  2. **Master Brand Catalog Table:** Admins enter the **Brand / Specification Name** and a single **Benchmark Rate (₹/unit)**.
+  3. **Live Computed Status Badges:** Real-time color-coded badges for all 4 packages on every brand row:
+     - 🟢 `✓ Included` (when Delta = 0)
+     - 🟡 `+₹X Upgrade` (when Delta > 0)
+     - 🔵 `−₹X Deduction Credit` (when Delta < 0)
+  4. **Atomic Item Save:** A single **"Save Item Configuration"** button saves the 4 package defaults and all brand rates in one atomic transaction.
+  5. **Modal Add Option:** Clicking "Add Brand Option" opens a clean dialog modal.
+  6. **Customer Calculator & PDF:** Downgrade credits ($-₹X/\text{sq.ft}$) display green/teal credit badges in Step 4 and deduct from total estimate cost on Step 5 and the PDF Quotation.
+

@@ -856,17 +856,18 @@ async function seedSpecifications(
     const pId = pkgIds[d.packageSlug];
     if (!optId || !pId) continue;
 
+    const deltaVal = Math.max(0, parseFloat(d.priceDelta) || 0).toFixed(2);
     const existing = existingOPs.find(ex => ex.optionId === optId && ex.packageId === pId);
     if (existing) {
       await db.update(optionPrices).set({
-        priceDelta: d.priceDelta,
+        priceDelta: deltaVal,
         priceType: d.priceType,
       }).where(eq(optionPrices.id, existing.id));
     } else {
       await db.insert(optionPrices).values({
         optionId: optId,
         packageId: pId,
-        priceDelta: d.priceDelta,
+        priceDelta: deltaVal,
         priceType: d.priceType,
       });
     }

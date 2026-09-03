@@ -164,11 +164,19 @@ ADDITIONAL KEY CLARIFICATIONS & CONFIRMED DIRECTIVES
    Solar, and Heat Pump.
 
 5. Volume Discount Threshold:
-   Fully dynamic and editable via Admin Pricing Config Manager
-   (volume_discount_threshold_sqft defaults to 3,500 sq.ft).
-
-6. Milestone Payment Schedule:
-   10 distinct phases totaling exactly 100%, populated in milestone_stages
-   table and rendered on PDF / Step 5 review.
+   - Volume Discount Threshold: Fully dynamic and editable via Admin Pricing Config Manager.
+- Milestone Payment Schedule: 10 distinct phases totaling exactly 100%, populated in milestone_stages table.
 
 ================================================================================
+QUESTION 5: UNIFIED MASTER BRAND CATALOG WITH TOP PACKAGE SELECTORS (SESSION 2 & 3)
+================================================================================
+How should Brand Pricing, Package Inclusions, and Save Operations be handled in the Admin Portal for maximum simplicity and zero math errors?
+
+Confirmed Decision: Unified Master Catalog with Top Package Selectors & Atomic Save
+1. Top Package Selectors: 4 dropdown selectors at the top of each item card for Basic, Standard, Premium, and Luxury included defaults.
+2. Master Brand Table: Enter Brand Name and a single Benchmark Rate (Rs./sqft).
+3. Live Computed Badges: Real-time badges for all 4 packages (Green 'Included', Amber '+Rs. X Upgrade', Teal '-Rs. X Credit').
+4. Atomic Item Save: A single 'Save Item Configuration' button per item card saves defaults and rates in one atomic API transaction.
+5. Modal Add Option: Clean modal dialog to add new brand options.
+6. Customer Calculator & PDF: Downgrade credits reduce total cost with clear credit badges and itemized line deductions.
+

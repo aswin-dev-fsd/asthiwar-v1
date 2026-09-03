@@ -162,7 +162,7 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
       )
       .orderBy(asc(items.sortOrder));
 
-    // Fetch options for customizable items (including universal prices)
+    // Fetch options for customizable items for the active package tier
     const optRows = await db
       .select({
         id: options.id,
@@ -180,19 +180,11 @@ export async function getPackageConfig(req: Request, res: Response, next: NextFu
         optionPrices,
         and(
           eq(optionPrices.optionId, options.id),
-          or(eq(optionPrices.packageId, pkg.id), isNull(optionPrices.packageId))
+          eq(optionPrices.packageId, pkg.id)
         )
       );
 
-    // Prioritize package-specific option price over universal price
-    const optionPricePriorityMap = new Map<number, typeof optRows[0]>();
-    for (const opt of optRows) {
-      const existing = optionPricePriorityMap.get(opt.id);
-      if (!existing || (opt.packageId !== null && existing.packageId === null)) {
-        optionPricePriorityMap.set(opt.id, opt);
-      }
-    }
-    const deduplicatedOptRows = Array.from(optionPricePriorityMap.values());
+    const deduplicatedOptRows = optRows;
 
     // Group items under categories
     const categoriesMap = catRows.map((cat) => {

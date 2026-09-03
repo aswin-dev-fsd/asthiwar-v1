@@ -66,7 +66,7 @@ export const AdminPricingConfigManager: React.FC = () => {
   const [showAddOptionModal, setShowAddOptionModal] = useState<boolean>(false);
   const [targetItem, setTargetItem] = useState<{ id: number; name: string } | null>(null);
   const [newOptName, setNewOptName] = useState<string>('');
-  const [newOptPrices, setNewOptPrices] = useState<Record<string, string>>({ universal: '0' });
+  const [newOptPrices, setNewOptPrices] = useState<Record<string, string>>({});
   const [newOptDescription, setNewOptDescription] = useState<string>('');
   const [isCreatingOption, setIsCreatingOption] = useState<boolean>(false);
 
@@ -141,34 +141,35 @@ export const AdminPricingConfigManager: React.FC = () => {
         });
         setLocEdit(lMap);
 
-        // Initialize specEdit map
+        // Initialize specEdit map strictly for active packages
         const sMap: Record<number, { name: string; prices: Record<string, number> }> = {};
         specs?.forEach((cat: any) => {
-          cat.items?.forEach((item: any) => {
-            item.options?.forEach((opt: any) => {
-              const pMap: Record<string, number> = {};
-              const universalPrice = Number(opt.activePrice?.priceDelta ?? 0);
-              pMap['universal'] = universalPrice;
+           cat.items?.forEach((item: any) => {
+             item.options?.forEach((opt: any) => {
+               const pMap: Record<string, number> = {};
 
-              if (opt.prices && opt.prices.length > 0) {
-                opt.prices.forEach((p: any) => {
-                  pMap[p.packageId ? String(p.packageId) : 'universal'] = Number(p.priceDelta);
-                });
-              }
+               if (opt.prices && opt.prices.length > 0) {
+                 opt.prices.forEach((p: any) => {
+                   if (p.packageId) {
+                     // Ensure non-negative value (>= 0)
+                     pMap[String(p.packageId)] = Math.max(0, Number(p.priceDelta) || 0);
+                   }
+                 });
+               }
 
-              // Pre-populate each package price with its specific value or fallback to universal
-              pkgs.forEach((pkg: any) => {
-                const pkgKey = String(pkg.id);
-                if (pMap[pkgKey] === undefined) {
-                  pMap[pkgKey] = pMap['universal'] ?? 0;
-                }
-              });
+               // Pre-populate each package price
+               pkgs.forEach((pkg: any) => {
+                 const pkgKey = String(pkg.id);
+                 if (pMap[pkgKey] === undefined) {
+                   pMap[pkgKey] = 0;
+                 }
+               });
 
-              sMap[opt.id] = { name: opt.brandName || opt.name || '', prices: pMap };
-            });
-          });
-        });
-        setSpecEdit(sMap);
+               sMap[opt.id] = { name: opt.brandName || opt.name || '', prices: pMap };
+             });
+           });
+         });
+         setSpecEdit(sMap);
       })
       .catch((err) => console.error('Failed to load admin configs:', err))
       .finally(() => setLoading(false));
@@ -303,12 +304,14 @@ export const AdminPricingConfigManager: React.FC = () => {
     if (!editData) return;
     setSavingId(`opt-${optionId}`);
     try {
-      const pricesArr = Object.entries(editData.prices)
-        .filter(([k, v]) => k === 'universal' || (v !== null && v !== undefined && !isNaN(Number(v))))
-        .map(([k, v]) => ({
-          packageId: k === 'universal' ? null : parseInt(k, 10),
-          priceDelta: Number(v) || 0
-        }));
+      const pricesArr = packages.map((pkg: any) => {
+        const rawVal = editData.prices[String(pkg.id)];
+        const numVal = Math.max(0, parseFloat(String(rawVal)) || 0);
+        return {
+          packageId: pkg.id,
+          priceDelta: numVal,
+        };
+      });
       await updateAdminOptionPrice(optionId, {
         name: editData.name,
         prices: pricesArr,
@@ -348,10 +351,13 @@ export const AdminPricingConfigManager: React.FC = () => {
       return;
     }
     const slug = newOptName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    const pricesArr = Object.entries(newOptPrices).map(([k, v]) => ({
-      packageId: k === 'universal' ? null : parseInt(k, 10),
-      priceDelta: parseFloat(v) || 0
-    }));
+    const pricesArr = packages.map((pkg: any) => {
+      const rawVal = newOptPrices[String(pkg.id)];
+      return {
+        packageId: pkg.id,
+        priceDelta: Math.max(0, parseFloat(String(rawVal)) || 0),
+      };
+    });
 
     setIsCreatingOption(true);
     try {
@@ -366,7 +372,7 @@ export const AdminPricingConfigManager: React.FC = () => {
       setShowAddOptionModal(false);
       setTargetItem(null);
       setNewOptName('');
-      setNewOptPrices({ universal: '0' });
+      setNewOptPrices({});
       setNewOptDescription('');
       fetchConfigs();
       setTimeout(() => setSuccessMessage(null), 4000);
@@ -668,6 +674,11 @@ export const AdminPricingConfigManager: React.FC = () => {
                           type="button"
                           onClick={() => {
                             setTargetItem({ id: item.id, name: item.name });
+                            const initPrices: Record<string, string> = {};
+                            packages.forEach((pkg: any) => {
+                              initPrices[String(pkg.id)] = '0';
+                            });
+                            setNewOptPrices(initPrices);
                             setShowAddOptionModal(true);
                           }}
                           className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
@@ -681,19 +692,19 @@ export const AdminPricingConfigManager: React.FC = () => {
                       {item.options && item.options.length > 0 ? (
                         <div className="space-y-3">
                           <div className="text-[11px] font-semibold text-slate-400 grid grid-cols-12 gap-3 px-2">
-                            <span className="col-span-4">Brand / Option Name</span>
-                            <span className="col-span-6">Upgrade Delta (₹/{item.unit}) by Package</span>
+                            <span className="col-span-3 sm:col-span-4">Brand / Option Name</span>
+                            <span className="col-span-7 sm:col-span-6">Upgrade Delta (₹/{item.unit}) by Package Tier</span>
                             <span className="col-span-2 text-right">Actions</span>
                           </div>
 
                           {item.options.map((opt: any) => {
-                            const edit = specEdit[opt.id] || { name: opt.brandName || opt.name || '', prices: { universal: Number(opt.activePrice?.priceDelta || 0) } };
+                            const edit = specEdit[opt.id] || { name: opt.brandName || opt.name || '', prices: {} };
                             const isSavingOpt = savingId === `opt-${opt.id}`;
                             const isDeletingOpt = savingId === `delete-opt-${opt.id}`;
 
                             return (
                               <div key={opt.id} className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60 grid grid-cols-12 gap-3 items-center">
-                                <div className="col-span-4">
+                                <div className="col-span-3 sm:col-span-4">
                                   <input
                                     type="text"
                                     className="form-input text-xs font-semibold text-white"
@@ -707,59 +718,88 @@ export const AdminPricingConfigManager: React.FC = () => {
                                   />
                                 </div>
 
-                                <div className="col-span-6 flex flex-wrap gap-2 items-center">
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] text-slate-500 font-semibold" title="Default fallback delta">Universal</span>
-                                    <div className="relative">
-                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">₹</span>
-                                      <input
-                                        type="number"
-                                        step="1"
-                                        min="0"
-                                        className="form-input pl-5 py-1 px-1 text-xs font-bold text-amber-400 w-16"
-                                        value={edit.prices['universal'] ?? 0}
-                                        onChange={(e) =>
-                                          setSpecEdit({
-                                            ...specEdit,
-                                            [opt.id]: {
-                                              ...edit,
-                                              prices: { ...edit.prices, universal: parseFloat(e.target.value) || 0 },
-                                            },
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  {packages.map((pkg: any) => (
-                                    <div key={pkg.id} className="flex flex-col">
-                                      <span className="text-[9px] text-slate-400 truncate max-w-[64px]" title={pkg.name}>
-                                        {pkg.name}
-                                      </span>
-                                      <div className="relative">
-                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">₹</span>
-                                        <input
-                                          type="number"
-                                          step="1"
-                                          min="0"
-                                          placeholder={String(edit.prices['universal'] ?? 0)}
-                                          className="form-input pl-5 py-1 px-1 text-xs font-bold text-amber-400 w-16"
-                                          value={edit.prices[String(pkg.id)] ?? ''}
-                                          onChange={(e) =>
-                                            setSpecEdit({
-                                              ...specEdit,
-                                              [opt.id]: {
-                                                ...edit,
-                                                prices: {
-                                                  ...edit.prices,
-                                                  [String(pkg.id)]: parseFloat(e.target.value) || 0,
+                                <div className="col-span-7 sm:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-2 items-center">
+                                  {packages.map((pkg: any) => {
+                                    const pkgPrice = edit.prices[String(pkg.id)] ?? 0;
+                                    const isComplimentary = pkgPrice === 0;
+
+                                    return (
+                                      <div key={pkg.id} className="flex flex-col">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-[10px] text-slate-300 font-semibold truncate" title={pkg.name}>
+                                            {pkg.name}
+                                          </span>
+                                        </div>
+
+                                        {isComplimentary ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSpecEdit({
+                                                ...specEdit,
+                                                [opt.id]: {
+                                                  ...edit,
+                                                  prices: {
+                                                    ...edit.prices,
+                                                    [String(pkg.id)]: 15,
+                                                  },
                                                 },
-                                              },
-                                            })
-                                          }
-                                        />
+                                              });
+                                            }}
+                                            className="w-full py-1.5 px-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-emerald-500/25 transition-all shadow-sm"
+                                            title="Click to set an extra charge"
+                                          >
+                                            <span>✓</span>
+                                            <span>Free</span>
+                                          </button>
+                                        ) : (
+                                          <div className="relative flex items-center">
+                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">₹</span>
+                                            <input
+                                              type="number"
+                                              step="1"
+                                              placeholder="0"
+                                              className="form-input pl-5 pr-8 py-1 text-xs font-bold w-full text-amber-400 border-amber-500/30 bg-amber-500/5 focus:border-amber-400"
+                                              value={pkgPrice}
+                                              onChange={(e) => {
+                                                const rawNum = parseFloat(e.target.value);
+                                                const val = isNaN(rawNum) ? 0 : rawNum;
+                                                setSpecEdit({
+                                                  ...specEdit,
+                                                  [opt.id]: {
+                                                    ...edit,
+                                                    prices: {
+                                                      ...edit.prices,
+                                                      [String(pkg.id)]: val,
+                                                    },
+                                                  },
+                                                });
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setSpecEdit({
+                                                  ...specEdit,
+                                                  [opt.id]: {
+                                                    ...edit,
+                                                    prices: {
+                                                      ...edit.prices,
+                                                      [String(pkg.id)]: 0,
+                                                    },
+                                                  },
+                                                });
+                                              }}
+                                              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-emerald-400 font-bold px-1 py-0.5 rounded hover:bg-slate-800"
+                                              title="Reset to Free / Complimentary"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        )}
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
 
                                 <div className="col-span-2 flex items-center justify-end gap-2">
@@ -1262,40 +1302,66 @@ export const AdminPricingConfigManager: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label text-xs">Upgrade Delta Rates (₹/unit)</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 mb-1">Universal Fallback</span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="0"
-                  className="form-input text-xs font-bold text-amber-400"
-                  value={newOptPrices['universal'] ?? ''}
-                  onChange={(e) => setNewOptPrices({ ...newOptPrices, universal: e.target.value })}
-                />
-              </div>
-              {packages.map((pkg: any) => (
-                <div key={pkg.id} className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 mb-1 truncate" title={pkg.name}>
-                    {pkg.name}
-                  </span>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    placeholder="0"
-                    className="form-input text-xs font-bold text-amber-400"
-                    value={newOptPrices[String(pkg.id)] ?? ''}
-                    onChange={(e) => setNewOptPrices({ ...newOptPrices, [String(pkg.id)]: e.target.value })}
-                  />
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-500 mt-1.5">
-              Specify upgrade costs for each tier. Leave empty to fallback to the Universal rate.
+            <label className="form-label text-xs font-semibold text-white">Upgrade Rates / Tier Inclusion</label>
+            <p className="text-[11px] text-slate-400 mb-2.5">
+              Click <strong>Free</strong> for tiers where this brand is included. Enter extra amount (e.g. ₹15, ₹45, ₹95) for upgrade tiers.
             </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {packages.map((pkg: any) => {
+                const rawVal = newOptPrices[String(pkg.id)];
+                const isComplimentary = rawVal === '0' || rawVal === '' || rawVal === undefined;
+
+                return (
+                  <div key={pkg.id} className="flex flex-col">
+                    <span className="text-[10px] text-slate-300 font-semibold mb-1 truncate" title={pkg.name}>
+                      {pkg.name}
+                    </span>
+
+                    {isComplimentary ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewOptPrices({ ...newOptPrices, [String(pkg.id)]: '15' });
+                        }}
+                        className="w-full py-1.5 px-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-emerald-500/25 transition-all shadow-sm"
+                        title="Click to set an extra charge"
+                      >
+                        <span>✓</span>
+                        <span>Free</span>
+                      </button>
+                    ) : (
+                      <div className="relative flex items-center">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">₹</span>
+                        <input
+                          type="number"
+                          step="1"
+                          placeholder="0"
+                          className="form-input pl-5 pr-7 py-1 text-xs font-bold w-full text-amber-400 border-amber-500/30 bg-amber-500/5 focus:border-amber-400"
+                          value={rawVal}
+                          onChange={(e) => {
+                            const num = parseFloat(e.target.value);
+                            setNewOptPrices({
+                              ...newOptPrices,
+                              [String(pkg.id)]: isNaN(num) ? '0' : String(num),
+                            });
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewOptPrices({ ...newOptPrices, [String(pkg.id)]: '0' });
+                          }}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-emerald-400 font-bold px-1"
+                          title="Set as Free"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="form-group">

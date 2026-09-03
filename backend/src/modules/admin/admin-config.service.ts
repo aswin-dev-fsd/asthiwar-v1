@@ -333,30 +333,39 @@ export async function createAdminOption(dto: CreateOptionDto) {
     for (const p of dto.prices) {
       priceMap.set(p.packageId, p);
     }
-    const inserts = Array.from(priceMap.values()).map((p) => ({
-      optionId: createdOption.id,
-      packageId: p.packageId,
-      priceDelta: p.priceDelta.toFixed(2),
-      priceType: itemPriceType,
-    }));
+    const inserts = Array.from(priceMap.values()).map((p) => {
+      const isComp = p.isComplimentary === true;
+      const rawDelta = isComp ? 0 : Number(p.priceDelta);
+      const deltaVal = isNaN(rawDelta) ? 0 : rawDelta;
+      return {
+        optionId: createdOption.id,
+        packageId: p.packageId,
+        priceDelta: deltaVal.toFixed(2),
+        priceType: itemPriceType,
+      };
+    });
     
     createdPrices = await db.insert(schema.optionPrices).values(inserts).returning();
   } else {
-    // Fallback to legacy single priceDelta
-    createdPrices = await db
-      .insert(schema.optionPrices)
-      .values({
+    // Default to 0.00 for all active packages
+    const activePkgs = await db.query.packages.findMany({
+      where: eq(schema.packages.isActive, true),
+    });
+    if (activePkgs.length > 0) {
+      const inserts = activePkgs.map((pkg) => ({
         optionId: createdOption.id,
-        priceDelta: (dto.priceDelta || 0).toFixed(2),
+        packageId: pkg.id,
+        priceDelta: '0.00',
         priceType: itemPriceType,
-      })
-      .returning();
+      }));
+      createdPrices = await db.insert(schema.optionPrices).values(inserts).returning();
+    }
   }
 
   return {
     ...createdOption,
     name: createdOption.brandName,
-    activePrice: createdPrices[0],
+    activePrice: createdPrices[0] || null,
     prices: createdPrices,
   };
 }
@@ -398,7 +407,7 @@ export async function updateAdminOptionPrice(optionId: number, dto: UpdateOption
       .where(eq(schema.options.id, optionId));
   }
 
-  // Update option prices
+  // Update option prices strictly per package
   let newPrices: any[] = [];
   
   if (dto.prices && dto.prices.length > 0) {
@@ -410,28 +419,19 @@ export async function updateAdminOptionPrice(optionId: number, dto: UpdateOption
     for (const p of dto.prices) {
       priceMap.set(p.packageId, p);
     }
-    const inserts = Array.from(priceMap.values()).map((p) => ({
-      optionId: optionId,
-      packageId: p.packageId,
-      priceDelta: p.priceDelta.toFixed(2),
-      priceType: itemPriceType,
-    }));
+    const inserts = Array.from(priceMap.values()).map((p) => {
+      const isComp = p.isComplimentary === true;
+      const rawDelta = isComp ? 0 : Number(p.priceDelta);
+      const deltaVal = isNaN(rawDelta) ? 0 : rawDelta;
+      return {
+        optionId: optionId,
+        packageId: p.packageId,
+        priceDelta: deltaVal.toFixed(2),
+        priceType: itemPriceType,
+      };
+    });
     
     newPrices = await db.insert(schema.optionPrices).values(inserts).returning();
-  } else if (dto.priceDelta !== undefined) {
-    // Fallback to legacy behavior but correctly setting to universal if replacing
-    await db.delete(schema.optionPrices).where(eq(schema.optionPrices.optionId, optionId));
-    
-    const [p] = await db
-      .insert(schema.optionPrices)
-      .values({
-        optionId: optionId,
-        packageId: null,
-        priceDelta: dto.priceDelta.toFixed(2),
-        priceType: itemPriceType,
-      })
-      .returning();
-    newPrices = [p];
   }
 
   return { id: optionId, name: dto.name || option.brandName, prices: newPrices };

@@ -5,48 +5,39 @@ This document details all Frontend, Backend, Database, Seed, PDF, and Admin chan
 
 ---
 
-## 1. Brand Customisation Per-Package Pricing Architecture & CRUD Fix
+## 1. Brand Customisation Per-Package Pricing Architecture & CRUD Overhaul
 
 ### Overview
-Completely overhauled the brand customizations pricing model and CRUD pipeline in the Admin Portal. Previously, brand option prices only supported a single universal price delta, and price updates lacked package filtering, leading to data overwrites. The system now fully supports package-specific pricing (Standard, Premium, Luxury, Elite) alongside a Universal fallback.
+Completely overhauled the brand customizations pricing model and CRUD pipeline in the Admin Portal. The system now enforces strict package-specific pricing (Basic, Standard, Premium, Luxury) with an intuitive **"Free / Included" vs "Upgrade Charge"** toggle across both the admin dashboard and public cost calculator.
 
 ### Database & Architecture Impact
 - **Table:** `option_prices`
 - **Integrity Verified:** Confirmed `option_prices.id` is not referenced by any foreign key. Past customer estimates store immutable JSON snapshots of pricing at calculation time, making clean-slate price set updates 100% safe.
-- **Calculator Compatibility:** Confirmed the public calculator's left-join query on `option_prices` (`package_id = X OR package_id IS NULL`) automatically prioritizes package-specific rates and seamlessly falls back to Universal rates.
+- **Strict Package Joins:** `calculator.controller.ts` now joins `option_prices` strictly on `optionPrices.packageId = pkg.id`, completely removing ambiguous fallback queries.
+- **Database Sanitization:** Created `sanitize_option_prices.ts` to purge orphaned null `package_id` rows and floor legacy negative downgrade deltas to `0.00` (Included).
 
 ### Backend Changes
 - **`admin-config.schema.ts`**:
-  - Extended `createOptionSchema` and `updateOptionPriceSchema` to support a `prices` array:
-    ```typescript
-    prices: z.array(
-      z.object({
-        packageId: z.number().int().positive().nullable(),
-        priceDelta: z.number().min(0),
-      })
-    ).optional()
-    ```
-  - Preserved optional `priceDelta` field for backwards compatibility.
+  - Extended `createOptionSchema` and `updateOptionPriceSchema` to accept `isComplimentary?: boolean` alongside `packageId` and `priceDelta`.
 - **`admin-config.service.ts`**:
-  - `createAdminOption`: Batch inserts package-specific price rows or creates a single universal row (`packageId = null`).
-  - `updateAdminOptionPrice`: Implemented a clean-slate transaction pattern that deletes existing `option_prices` records for the option and inserts the new batch of per-package prices.
+  - `createAdminOption`: Batch inserts package-specific price rows for all 4 tiers (defaulting to 0.00 for complimentary tiers).
+  - `updateAdminOptionPrice`: Cleans existing option prices and batch inserts package-specific price definitions with automatic handling of `isComplimentary`.
 - **`admin-config.controller.ts`**:
   - Updated `updateOptionPriceController` response messaging to reflect batch price updates.
 
 ### Frontend Changes
-- **`adminApi.ts`**:
-  - Updated TypeScript interfaces for `createAdminOption` and `updateAdminOptionPrice` to support `prices?: { packageId: number | null; priceDelta: number }[]`.
 - **`AdminPricingConfigManager.tsx`**:
-  - **State Refactor:**
-    - `specEdit`: Refactored to `Record<number, { name: string; prices: Record<string, number> }>`.
-    - `newOptPrices`: Refactored to `Record<string, string>` storing `{ universal: '...', [packageId]: '...' }`.
-  - **Inline Editing Table:**
-    - Expanded table layout from 3 columns to `col-span-4` (Brand/Option Name), `col-span-6` (Inline pricing grid), and `col-span-2` (Actions).
-    - Rendered 5 inline inputs per brand option: **Universal**, **Standard**, **Premium**, **Luxury**, and **Elite**.
-  - **Add Brand Option Modal:**
-    - Replaced single delta input with a 5-field grid for Universal + 4 package tiers.
-    - Added helper text: *"Leave package specific prices empty to fallback to Universal."*
-  - **Validation:** Verified with `tsc --noEmit` with zero TypeScript errors.
+  - **Interactive Free / Upgrade UI:**
+    - Replaced raw universal number inputs with responsive 4-tier cards (Basic, Standard, Premium, Luxury).
+    - Tiers where a brand is included display a green `✓ Free` button.
+    - Clicking `✓ Free` switches into a custom rate input (e.g. `₹15`, `₹45`, `₹95`).
+    - Clicking `✕` resets the tier back to `✓ Free`.
+    - Applied consistently across both the **Inline Brand Table** and the **Add Brand Option Modal**.
+- **`Step4Customizations.tsx`**:
+  - Enhanced price badge formatting:
+    - Upgrade: `+₹45/sqft`
+    - Negative Delta / Downgrade: `−₹20/sqft (Credit)`
+    - Complimentary: `✓ Included` (bold emerald badge).
 
 ---
 
@@ -112,5 +103,5 @@ Integrated the formal 11 Standard Construction Exclusions and Client-Scope items
 
 - **TypeScript Typecheck (`npx tsc --noEmit`)**: Passed with 0 errors across frontend and backend.
 - **Database Schema Validation**: Verified cascade constraints and query safety.
-- **Admin Dashboard Integration**: Tested brand option creation, package-level editing, and deletion flows.
+- **Admin Dashboard Integration**: Tested brand option creation, package-level editing, and deletion flows with the Free/Upgrade toggle.
 - **Live Servers**: Verified active development servers on ports 5173 / 3000 / 4000.
