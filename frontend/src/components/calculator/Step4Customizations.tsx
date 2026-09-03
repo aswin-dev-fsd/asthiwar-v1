@@ -145,9 +145,9 @@ export const Step4Customizations: React.FC<Step4Props> = ({
                         </div>
                         <div className="text-[11px] font-semibold text-amber-400">
                           {opt.priceDelta > 0 
-                            ? `+₹${opt.priceDelta}/sqft` 
+                            ? `+₹${opt.priceDelta.toLocaleString('en-IN')}${item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'}` 
                             : opt.priceDelta < 0 
-                              ? `-₹${Math.abs(opt.priceDelta)}/sqft` 
+                              ? `-₹${Math.abs(opt.priceDelta).toLocaleString('en-IN')}${item.unit === 'fixed' || opt.priceType === 'fixed' ? '' : '/sqft'}` 
                               : 'Included'}
                         </div>
                       </div>

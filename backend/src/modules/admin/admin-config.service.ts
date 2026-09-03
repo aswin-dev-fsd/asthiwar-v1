@@ -313,29 +313,51 @@ export async function createAdminOption(dto: CreateOptionDto) {
     throw new AdminServiceError(404, 'ITEM_NOT_FOUND', `Item with ID ${dto.itemId} not found`);
   }
 
+  const rawSlug = (dto.slug?.trim() || dto.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')).replace(/^_+|_+$/g, '') || `opt_${Date.now()}`;
+
   const [createdOption] = await db
     .insert(schema.options)
     .values({
       itemId: dto.itemId,
       brandName: dto.name,
-      slug: dto.slug,
+      slug: rawSlug,
       specification: dto.description || '',
     })
     .returning();
 
-  const [createdPrice] = await db
-    .insert(schema.optionPrices)
-    .values({
+  const itemPriceType = item.unit === 'fixed' ? 'fixed' : 'per_sqft';
+  let createdPrices: any[] = [];
+  if (dto.prices && dto.prices.length > 0) {
+    // Deduplicate by packageId to prevent DB issues
+    const priceMap = new Map();
+    for (const p of dto.prices) {
+      priceMap.set(p.packageId, p);
+    }
+    const inserts = Array.from(priceMap.values()).map((p) => ({
       optionId: createdOption.id,
-      priceDelta: (dto.priceDelta || 0).toFixed(2),
-    })
-    .returning();
+      packageId: p.packageId,
+      priceDelta: p.priceDelta.toFixed(2),
+      priceType: itemPriceType,
+    }));
+    
+    createdPrices = await db.insert(schema.optionPrices).values(inserts).returning();
+  } else {
+    // Fallback to legacy single priceDelta
+    createdPrices = await db
+      .insert(schema.optionPrices)
+      .values({
+        optionId: createdOption.id,
+        priceDelta: (dto.priceDelta || 0).toFixed(2),
+        priceType: itemPriceType,
+      })
+      .returning();
+  }
 
   return {
     ...createdOption,
     name: createdOption.brandName,
-    activePrice: createdPrice,
-    prices: [createdPrice],
+    activePrice: createdPrices[0],
+    prices: createdPrices,
   };
 }
 
@@ -363,6 +385,11 @@ export async function updateAdminOptionPrice(optionId: number, dto: UpdateOption
     throw new AdminServiceError(404, 'OPTION_NOT_FOUND', `Option with ID ${optionId} not found`);
   }
 
+  const parentItem = await db.query.items.findFirst({
+    where: eq(schema.items.id, option.itemId),
+  });
+  const itemPriceType = parentItem?.unit === 'fixed' ? 'fixed' : 'per_sqft';
+
   // Update option brandName if provided
   if (dto.name) {
     await db
@@ -371,20 +398,43 @@ export async function updateAdminOptionPrice(optionId: number, dto: UpdateOption
       .where(eq(schema.options.id, optionId));
   }
 
-  // Update option prices in-place!
-  let newPrice = null;
-  if (dto.priceDelta !== undefined) {
+  // Update option prices
+  let newPrices: any[] = [];
+  
+  if (dto.prices && dto.prices.length > 0) {
+    // Delete existing prices
+    await db.delete(schema.optionPrices).where(eq(schema.optionPrices.optionId, optionId));
+    
+    // Deduplicate by packageId
+    const priceMap = new Map();
+    for (const p of dto.prices) {
+      priceMap.set(p.packageId, p);
+    }
+    const inserts = Array.from(priceMap.values()).map((p) => ({
+      optionId: optionId,
+      packageId: p.packageId,
+      priceDelta: p.priceDelta.toFixed(2),
+      priceType: itemPriceType,
+    }));
+    
+    newPrices = await db.insert(schema.optionPrices).values(inserts).returning();
+  } else if (dto.priceDelta !== undefined) {
+    // Fallback to legacy behavior but correctly setting to universal if replacing
+    await db.delete(schema.optionPrices).where(eq(schema.optionPrices.optionId, optionId));
+    
     const [p] = await db
-      .update(schema.optionPrices)
-      .set({
+      .insert(schema.optionPrices)
+      .values({
+        optionId: optionId,
+        packageId: null,
         priceDelta: dto.priceDelta.toFixed(2),
+        priceType: itemPriceType,
       })
-      .where(eq(schema.optionPrices.optionId, optionId))
       .returning();
-    newPrice = p;
+    newPrices = [p];
   }
 
-  return { id: optionId, name: dto.name || option.brandName, newPrice };
+  return { id: optionId, name: dto.name || option.brandName, prices: newPrices };
 }
 
 export async function updateAdminPackageItem(packageItemId: number, dto: UpdatePackageItemDto) {

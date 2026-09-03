@@ -311,6 +311,68 @@ export const Step5EstimateReport: React.FC<Step5Props> = ({ result, onReset }) =
         </div>
       </div>
 
+      {/* 11 Standard Exclusions & Client Scope Card */}
+      <div className="asthiwar-card bg-slate-900/60 border-slate-800">
+        <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="font-heading font-bold text-base text-white">
+              Standard Exclusions & Client Scope
+            </h3>
+            <p className="text-xs text-slate-400">
+              Contract transparency: The following statutory, interior, and utility items are managed directly with respective authorities or available as custom add-ons.
+            </p>
+          </div>
+          <span className="badge badge-silver text-[10px]">Scope Clarity</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs text-slate-300">
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">1.</span>
+            <span><strong>Elevation Work:</strong> Custom architectural facade & exterior stone/HPL claddings beyond standard design</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">2.</span>
+            <span><strong>Outer Area Development:</strong> Setbacks, perimeter pavers, compound pathways & landscaping</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">3.</span>
+            <span><strong>Interior Works & Carpentry:</strong> Wardrobes, kitchen cabinets, modular woodwork & loose furniture</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">4.</span>
+            <span><strong>Building Plan Sanction:</strong> DTCP / Local body building plan approval & government liaison fees</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">5.</span>
+            <span><strong>Electricity Board (EB):</strong> Permanent line connection charges, meter deposit & statutory tariffs</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">6.</span>
+            <span><strong>Gas Connection:</strong> Piped gas line connection & municipal pipeline installation charges</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">7.</span>
+            <span><strong>Water & Drainage (UGD):</strong> Municipal drinking water & underground drainage connection fees</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">8.</span>
+            <span><strong>Borewell Drilling:</strong> Borewell drilling, PVC casing pipes & submersible pump depth piping</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">9.</span>
+            <span><strong>Water Motors & Pumps:</strong> Supply & installation of motors (unless chosen in Add-Ons)</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60">
+            <span className="text-amber-400 font-bold shrink-0">10.</span>
+            <span><strong>Electrical Appliances:</strong> TV, Refrigerator, Air Conditioners, Chimney, Hob & Geysers</span>
+          </div>
+          <div className="flex items-start gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/60 md:col-span-2">
+            <span className="text-amber-400 font-bold shrink-0">11.</span>
+            <span><strong>Taxes & Levies:</strong> Vacant Land Tax (VLT), property assessment taxes & municipal duties</span>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
         <button
           type="button"

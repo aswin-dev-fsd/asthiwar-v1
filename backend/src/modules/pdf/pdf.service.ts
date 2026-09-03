@@ -363,9 +363,41 @@ export async function generateEstimatePdf(estimateNumberOrId: string): Promise<B
       ];
 
       terms.forEach((t) => {
-        doc.fillColor(DARK).font('Helvetica').fontSize(7.5).text(t, 42, doc.y);
-        doc.y += 11;
+        doc.fillColor(DARK).font('Helvetica').fontSize(7).text(t, 42, doc.y);
+        doc.y += 9.5;
       });
+
+      // ----------------------------------------------------
+      // 11 STANDARD EXCLUSIONS & CLIENT SCOPE
+      // ----------------------------------------------------
+      doc.y += 4;
+      doc.fillColor(PRIMARY).font('Helvetica-Bold').fontSize(8).text('STANDARD EXCLUSIONS & CLIENT SCOPE (Out of Scope for Civil Contract):', 36, doc.y);
+      doc.y += 3;
+
+      const exclusionsCol1 = [
+        '• Elevation Work (Special exterior stone/HPL claddings)',
+        '• Outer Area Development (Setbacks, paving & landscape)',
+        '• Interior Works & Carpentry (Wardrobes, modular units)',
+        '• DTCP & Local Body Building Plan Sanction Fees',
+        '• Electricity Board (EB) Connection & Meter Deposits',
+        '• Gas Connection & Piped Gas Installation Charges',
+      ];
+      const exclusionsCol2 = [
+        '• Drinking Water & Drainage (UGD) Connection Fees',
+        '• Borewell Drilling, Casing & Submersible Piping',
+        '• Water Pumps & Motors (unless chosen as Add-On)',
+        '• Electrical Appliances (TV, Fridge, ACs, Chimney)',
+        '• Vacant Land Tax (VLT) & Local Property Taxes',
+      ];
+
+      const exclY = doc.y;
+      exclusionsCol1.forEach((t, i) => {
+        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(6.5).text(t, 42, exclY + (i * 8.5));
+      });
+      exclusionsCol2.forEach((t, i) => {
+        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(6.5).text(t, 290, exclY + (i * 8.5));
+      });
+      doc.y = exclY + (exclusionsCol1.length * 8.5) + 4;
 
       // ----------------------------------------------------
       // SIGNATURE BLOCK (Fixed within bottom margin)

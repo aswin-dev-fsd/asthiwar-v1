@@ -336,7 +336,7 @@ export async function updateOptionPriceController(req: Request, res: Response, n
     const newPrice = await updateAdminOptionPrice(optionId, dto);
     res.json({
       success: true,
-      message: 'Option price delta updated with history versioning',
+      message: 'Option prices updated successfully',
       data: newPrice,
     });
   } catch (error) {

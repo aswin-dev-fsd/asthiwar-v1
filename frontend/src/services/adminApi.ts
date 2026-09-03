@@ -277,6 +277,7 @@ export async function createAdminOption(payload: {
   slug: string;
   description?: string;
   priceDelta?: number;
+  prices?: { packageId: number | null; priceDelta: number }[];
 }) {
   const res = await adminFetch(`${API_BASE}/config/options`, {
     method: 'POST',
@@ -288,7 +289,7 @@ export async function createAdminOption(payload: {
 
 export async function updateAdminOptionPrice(
   optionId: number,
-  payload: { name?: string; priceDelta?: number }
+  payload: { name?: string; priceDelta?: number; prices?: { packageId: number | null; priceDelta: number }[] }
 ) {
   const res = await adminFetch(`${API_BASE}/config/options/${optionId}/price`, {
     method: 'PUT',

@@ -46,14 +46,22 @@ export const updateAddonMetadataSchema = z.object({
 export const createOptionSchema = z.object({
   itemId: z.coerce.number().int().positive('Item ID is required'),
   name: z.string().min(1, 'Option name is required'),
-  slug: z.string().min(1, 'Slug is required'),
+  slug: z.string().min(1).optional(),
   description: z.string().optional(),
-  priceDelta: z.coerce.number().min(0, 'Price delta must be non-negative').default(0),
+  priceDelta: z.coerce.number().min(0, 'Price delta must be non-negative').default(0).optional(),
+  prices: z.array(z.object({
+    packageId: z.coerce.number().int().nullable(),
+    priceDelta: z.coerce.number().min(0)
+  })).optional(),
 });
 
 export const updateOptionPriceSchema = z.object({
   name: z.string().optional(),
   priceDelta: z.coerce.number().min(0, 'Price delta must be non-negative').optional(),
+  prices: z.array(z.object({
+    packageId: z.coerce.number().int().nullable(),
+    priceDelta: z.coerce.number().min(0)
+  })).optional(),
 });
 
 export const updatePackageItemSchema = z.object({

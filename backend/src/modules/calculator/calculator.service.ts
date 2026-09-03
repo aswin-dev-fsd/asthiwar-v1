@@ -330,8 +330,17 @@ export async function calculateEstimate(
       const matchedPriceRow = apRows.find((p) => tierFilter.includes(p.packageTier)) ?? apRows[0];
       if (!matchedPriceRow) continue;
 
-      const unitPrice = Number(matchedPriceRow.price);
+      let unitPrice = Number(matchedPriceRow.price);
       const qty = ad.quantity !== undefined ? ad.quantity : Number(add.defaultQuantity ?? 1);
+
+      // Dynamic rule: Roof Weathering is complimentary in Premium & Luxury, and free for Basic/Standard if terrace > 2000 sq.ft
+      if (add.slug === 'cool_roof_tiles' || add.slug === 'roof_weathering') {
+        if (input.packageSlug === 'premium' || input.packageSlug === 'luxury') {
+          unitPrice = 0;
+        } else if (qty > 2000) {
+          unitPrice = 0;
+        }
+      }
 
       let totalPrice = 0;
       switch (add.pricingUnit) {

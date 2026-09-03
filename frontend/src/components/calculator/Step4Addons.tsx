@@ -149,9 +149,21 @@ export const Step4Addons: React.FC<Step4AddonsProps> = ({
               }`}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
+                <div className="flex-1">
                   <h4 className="font-heading font-bold text-sm text-white">{addon.name}</h4>
-                  <p className="text-xs text-slate-400 line-clamp-2 mt-0.5">{addon.description}</p>
+                  <div className="text-xs text-slate-400 mt-1 space-y-1.5">
+                    {addon.description?.includes('Note:') ? (
+                      <>
+                        <p>{addon.description.split('Note:')[0].trim()}</p>
+                        <div className="flex items-start gap-1.5 text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
+                          <span className="shrink-0">💡</span>
+                          <span><strong>Note:</strong> {addon.description.split('Note:')[1].trim()}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p>{addon.description}</p>
+                    )}
+                  </div>
                 </div>
                 <span className="badge badge-gold shrink-0">{addon.pricingUnit.replace(/_/g, ' ')}</span>
               </div>
